@@ -95,7 +95,7 @@ def update_numbers(numbers, address_id):
     try:
         number_obj = HouseNumber.objects.get(id=number.id)
     except HouseNumber.DoesNotExist:
-        ...
+        pass
 
     update_number = numbers
 
@@ -112,7 +112,6 @@ def update_numbers(numbers, address_id):
                 referencias.append(new_name_obj.id)
             else:
                 is_updated = False
-
     if referencias:
         referencia = referencias.pop()
         NumberAddress.objects.filter(address=address_id).delete()
@@ -129,7 +128,6 @@ def update_numbers(numbers, address_id):
 
 def update_state(state, address_id):
     is_updated = True
-
     if isinstance(state, list):
         full_number_from_db = " ".join(state).lower()
         new_state = state.pop()
@@ -138,7 +136,6 @@ def update_state(state, address_id):
         new_state = state
     else:
         return False
-
     if new_state != full_number_from_db:
         referencias = []
         try:
@@ -152,7 +149,6 @@ def update_state(state, address_id):
                 referencias.append(new_state_obj.id)
             else:
                 is_updated = False
-
     if referencias:
         referencia = referencias.pop()
         StateAddress.objects.filter(address=address_id).delete()
@@ -166,5 +162,4 @@ def update_state(state, address_id):
             serializer_state.save()
         else:
             is_updated = False
-
     return is_updated

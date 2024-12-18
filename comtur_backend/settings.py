@@ -18,13 +18,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-k_dpv$1vab-!ykx#%=#=5(x=kobtk^f02y2z6v=fzeq(&l9#fe'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'comtur',
@@ -97,8 +93,6 @@ password = os.getenv('PASSWORD')
 host = os.getenv('HOST')
 port = os.getenv('PORT')
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -122,9 +116,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL')
 EMAIL_HOST_PASSWORD = config('EMAIL_PASS')
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {

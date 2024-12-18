@@ -14,18 +14,34 @@ from .views.account.update_account import password_reset
 from .views.account.update_account import PasswordResetConfirm
 
 urlpatterns = [
-    path('create/', create_user, name="create_user"),
-    path('login-cpf/', login_user_with_cpf, name="login_cpf"),
-    path("user-profile/", get_user_profile, name="get-user-profile"),
-    path("email-validation/", email_validation, name="email-validation"),
-    path("verify-email-code/", verify_email_code, name="verify-email-code"),
-    path("update-user/", update_user, name="update-user"),
-    path("delete-user/", delete_user, name="delete_user"),
-    path("create-address/", create_address, name="create_address"),
-    path("get-address/", get_one_address, name="get_one_address"),
-    path("update-address/", update_address, name="update_address"),
-    path("delete-address/", delete_address, name="delete_address"),
-    path('request-reset/', password_reset, name='request-reset'),
-    path('reset/<uidb64>/<token>/', PasswordResetConfirm,
-         name='password-reset-confirm'),
+    # User
+    path('create/',
+         create_user, name="create_user"),
+    path('login-cpf/',
+         login_user_with_cpf, name="login_cpf"),
+    path("user-profile/",
+         get_user_profile, name="get-user-profile"),
+    path("email-validation/",
+         email_validation, name="email-validation"),
+    path("verify-email-code/",
+         verify_email_code, name="verify-email-code"),
+    path("update-user/",
+         update_user, name="update-user"),
+    path("delete-user/",
+         delete_user, name="delete_user"),
+    # Address
+    path("create-address/",
+         create_address, name="create_address"),
+    path("get-address/",
+         get_one_address, name="get_one_address"),
+    path("update-address/",
+         update_address, name="update_address"),
+    path("delete-address/",
+         delete_address, name="delete_address"),
+    # Password Reset
+    path('request-reset/',
+         password_reset, name='request-reset'),
+    path('reset/<uidb64>/<token>/',
+         PasswordResetConfirm, name='password-reset-confirm'),
+
 ]

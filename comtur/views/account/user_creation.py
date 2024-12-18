@@ -231,38 +231,28 @@ def validate_cpf(cpf):
 
 def validate_cnpj(cnpj):
     LENGTH_CNPJ = 14
-
-    # Remove caracteres não numéricos do CNPJ
     cnpj = ''.join(filter(str.isdigit, cnpj))
 
-    # Verifica se o CNPJ tem 14 dígitos
     if len(cnpj) != LENGTH_CNPJ:
         return False
-
-    # Verifica se todos os caracteres são iguais (ex: "11111111111111")
     if cnpj in (c * LENGTH_CNPJ for c in "1234567890"):
         return False
 
-    # Separar os 12 primeiros dígitos e os 2 dígitos verificadores
-    cnpj_base = cnpj[:12]  # Os 12 primeiros números do CNPJ
-    digitos_verificadores = cnpj[12:]  # Os dois últimos dígitos do CNPJ
+    cnpj_base = cnpj[:12]
+    digitos_verificadores = cnpj[12:]
 
-    # Cálculo do 1º dígito verificador (DV1)
     pesos_dv1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
     soma_dv1 = sum(int(cnpj_base[i]) * pesos_dv1[i] for i in range(12))
     dv1 = (soma_dv1 * 10) % 11
     if dv1 >= 10:
         dv1 = 0
 
-    # Cálculo do 2º dígito verificador (DV2)
-    cnpj_base += str(dv1)  # Agora temos 13 dígitos
+    cnpj_base += str(dv1)
     pesos_dv2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
     soma_dv2 = sum(int(cnpj_base[i]) * pesos_dv2[i] for i in range(13))
     dv2 = (soma_dv2 * 10) % 11
     if dv2 >= 10:
         dv2 = 0
-
-    # Comparar os dígitos calculados com os dígitos informados
     return digitos_verificadores == f"{dv1}{dv2}"
 
 
@@ -275,7 +265,6 @@ def create_names(name):
             obj = Names.objects.get(name=nome_lower)
             referencias.append(obj.id)
         except Names.DoesNotExist:
-            # Se não existir, cria um novo objeto com o serializer
             test_data = {"name": nome_lower}
             serializer = CreateNames(data=test_data)
             if serializer.is_valid():
@@ -292,10 +281,8 @@ def validate_username(username):
         return False
     if len(username) < 3:
         return False
-    # logica para validar se o nome possui apenas numeros no lugar de letras
     if len(username) > 100:
         return False
-
     return True
 
 
@@ -326,7 +313,6 @@ def validate_password(password):
 
 
 def cript_password(password):
-    # Certifique-se de que a senha é uma string
     if not isinstance(password, str):
         raise ValueError("A senha deve ser uma string.")
 
