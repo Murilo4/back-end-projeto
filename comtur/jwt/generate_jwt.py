@@ -14,6 +14,7 @@ def generate_jwt(user_data):
     payload = {
         'id': user_data.id,
         'cpf': user_data.cpf,
+        'cnpj': user_data.cnpj,
         'exp': datetime.now(timezone.utc) + timedelta(minutes=1440)
         # Define expiração para 10 minutos
     }

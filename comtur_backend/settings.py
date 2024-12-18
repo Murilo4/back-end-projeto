@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 from decouple import config
-from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -36,6 +35,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '2/minute',  # Limite para usuários anônimos
+        'minute': '5/minute',
+        'user': '5/minute',  # Limite para usuários autenticados
+        'daily': '100/day',   # Limite diário
+        'hourly': '50/hour',  # Limite horário
+    }
+}
 
 CORS_ALLOW_HEADERS = [
     'jwt_token',
@@ -80,15 +94,14 @@ WSGI_APPLICATION = 'comtur_backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('NAME'),
-        'USER': config('USER'),
-        'PASSWORD': config('PASSWORD'),
-        'HOST': config('HOST'),
-        'PORT': config('PORT'),
+        'NAME': "defaultdb",
+        'USER': "avnadmin",
+        'PASSWORD': "AVNS_-0sEwMI9o9RfAoNfGIR",
+        'HOST': "mysql-comtur-murilohenrique12344-d5d0.d.aivencloud.com",
+        'PORT': "14232",
         'OPTIONS': {
             'ssl': {
                 'ca': './ca.pem',
@@ -96,6 +109,13 @@ DATABASES = {
         },
     }
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL')
+EMAIL_HOST_PASSWORD = config('EMAIL_PASS')
 
 
 # Password validation

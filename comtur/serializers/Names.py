@@ -16,7 +16,7 @@ class CreateNames(serializers.ModelSerializer):
 class CreateUserName(serializers.ModelSerializer):
     class Meta:
         model = UserName
-        fields = ['name', 'user', 'create_order']
+        fields = ['name_id', 'user_id', 'create_order']
 
     def create(self, validated_data):
         username = UserName(**validated_data)
