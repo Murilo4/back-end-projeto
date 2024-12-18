@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 from decouple import config
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -90,18 +91,22 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'comtur_backend.wsgi.application'
-
+name = os.getenv('NAME')
+user = os.getenv('USER')
+password = os.getenv('PASSWORD')
+host = os.getenv('HOST')
+port = os.getenv('PORT')
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "defaultdb",
-        'USER': "avnadmin",
-        'PASSWORD': "AVNS_-0sEwMI9o9RfAoNfGIR",
-        'HOST': "mysql-comtur-murilohenrique12344-d5d0.d.aivencloud.com",
-        'PORT': "14232",
+        'NAME': name,
+        'USER': user,
+        'PASSWORD': password,
+        'HOST': host,
+        'PORT': port,
         'OPTIONS': {
             'ssl': {
                 'ca': './ca.pem',

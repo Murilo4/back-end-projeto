@@ -21,8 +21,8 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+@throttle_classes([MinuteRateThrottleAnon,
+                   HourlyRateThrottle, DailyRateThrottle])
 def update_user(request):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
@@ -177,10 +177,10 @@ def password_reset(request):
             [user.email],
             fail_silently=False,
         )
-        return JsonResponse({"msg": "Password reset link sent!"},
+        return JsonResponse({"message": "Password reset link sent!"},
                             status=status.HTTP_200_OK)
     except NormalUser.DoesNotExist:
-        return JsonResponse({"msg": "User not found."},
+        return JsonResponse({"message": "User not found."},
                             status=status.HTTP_404_NOT_FOUND)
 
 
@@ -203,8 +203,8 @@ def PasswordResetConfirm(request, uidb64, token):
         new_password = request.data.get('password')
         user.set_password(new_password)
         user.save()
-        return JsonResponse({"msg": "Password has been reset!"},
+        return JsonResponse({"message": "Password has been reset!"},
                             status=status.HTTP_200_OK)
     else:
-        return JsonResponse({"msg": "Invalid token"},
+        return JsonResponse({"message": "Invalid token"},
                             status=status.HTTP_400_BAD_REQUEST)
