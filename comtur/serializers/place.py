@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Places, Category, PlaceCategories
+from ..models import Places, Category, PlaceCategories, PlacesPhotos
 
 
 class CreatePlace(serializers.ModelSerializer):
@@ -35,3 +35,23 @@ class CreatePlaceCat(serializers.ModelSerializer):
         placeCat = PlaceCategories(**validated_data)
         placeCat.save()
         return placeCat
+
+
+class PlaceGetSerializer(serializers.ModelSerializer):
+    workStart = serializers.CharField(source="work_start")
+    workStop = serializers.IntegerField(source="work_stop")
+
+    class Meta:
+        model = Places
+        fields = ('description', 'type', 'locationX',
+                  'locationY', 'workStart', 'workStop',
+                  'enterprise', 'about')
+
+
+class PlacePhotoGetSerializer(serializers.ModelSerializer):
+    workStart = serializers.CharField(source="work_start")
+    workStop = serializers.IntegerField(source="work_stop")
+
+    class Meta:
+        model = PlacesPhotos
+        fields = ('')
