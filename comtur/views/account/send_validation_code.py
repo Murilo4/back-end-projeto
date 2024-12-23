@@ -32,7 +32,7 @@ def email_validation(request):
 
         validation_code = f'{random.randint(100000, 999999)}'
 
-        subject = 'Seu código de validação'
+        subject = 'Código de validação'
         message = f'Seu código de validação é: {validation_code}'
         from_email = email
         recipient_list = [email]
@@ -66,8 +66,6 @@ def verify_email_code(request):
             return JsonResponse({'success': False,
                                  'message': 'Email e código são obrigatórios'},
                                 status=status.HTTP_400_BAD_REQUEST)
-
-        # Verifica o código no cache
         stored_code = cache.get(f'validation_code_{email}')
 
         if stored_code is None:
@@ -80,7 +78,6 @@ def verify_email_code(request):
             user = UpdateValidationNormalUser(data={'is_validated': 1})
             if user:
                 user.save()
-
                 return JsonResponse({'success': True,
                                     'message': 'Código validado com sucesso'},
                                     status=status.HTTP_200_OK)

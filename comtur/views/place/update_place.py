@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 @api_view(['PUT'])
 @throttle_classes([MinuteRateThrottleAnon,
                    HourlyRateThrottle, DailyRateThrottle])
-def update_user(request):
+def update_place(request):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},

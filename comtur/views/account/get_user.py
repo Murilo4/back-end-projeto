@@ -7,7 +7,7 @@ import os
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
 from ...throttles import MinuteRateThrottle
 from cryptography.fernet import Fernet
-import json
+# import json
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
@@ -77,13 +77,14 @@ def get_user_profile(request):
             'phone': user.phone,
             'photo': user.photo
         }
-        user_data_json = json.dumps(user_data).encode('utf-8')
+        # user_data_json = json.dumps(user_data).encode('utf-8')
 
-        ciphertext = cipher_suite.encrypt(user_data_json)
+        # ciphertext = cipher_suite.encrypt(user_data_json)
 
         return JsonResponse({
             "success": True,
-            "data": ciphertext
+            "message": "Dados do usuário recuperados com sucesso.",
+            "data": user_data
         }, status=status.HTTP_200_OK)
 
     except NormalUser.DoesNotExist:

@@ -10,6 +10,7 @@ class CreatePlace(serializers.ModelSerializer):
                   'enterprise', 'about')
 
     def create(self, validated_data):
+        print("chegou ao serializer")
         place = Places(**validated_data)
         place.save()
         return place
@@ -43,7 +44,8 @@ class PlaceGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Places
-        fields = ('description', 'type', 'locationX',
+        fields = ('description', 'type', 'rating',
+                  'locationX', 'rating_number',
                   'locationY', 'workStart', 'workStop',
                   'enterprise', 'about')
 
@@ -72,3 +74,20 @@ class UpdatePlaces(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+class CreatePhotos(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesPhotos
+        fields = ['img_url', 'description', 'place_photo']
+
+    def create(self, validated_data):
+        photo = PlacesPhotos(**validated_data)
+        photo.save()
+        return photo
+
+
+class PlaceCommentsGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesPhotos
+        fields = ('imgUrl', 'description')

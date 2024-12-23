@@ -63,7 +63,7 @@ class Subscription(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'Subscription'
+        db_table = 'subscription'
 
 
 class Plans(models.Model):
@@ -152,14 +152,13 @@ class NumberAddress(models.Model):
 class Places(models.Model):
     id = models.IntegerField(primary_key=True)
     description = models.TextField()
-    rating = models.IntegerField()
-    rating_number = models.IntegerField()
+    rating = models.IntegerField(null=True, blank=True)
+    rating_number = models.IntegerField(null=True, blank=True)
     type = models.CharField(max_length=255)
-    category = models.CharField(max_length=255)
-    locationX = models.IntegerField()
-    locationY = models.IntegerField()
-    work_start = models.TimeField()
-    work_stop = models.TimeField()
+    locationX = models.TextField(null=True, blank=True)
+    locationY = models.TextField(null=True, blank=True)
+    work_start = models.CharField(max_length=255)
+    work_stop = models.CharField(max_length=255)
     about = models.TextField()
     enterprise = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
@@ -174,7 +173,7 @@ class PlacesPhotos(models.Model):
     id = models.IntegerField(primary_key=True)
     img_url = models.TextField()
     description = models.CharField(max_length=255)
-    place = models.ForeignKey(Places, on_delete=models.CASCADE)
+    place_photo = models.ForeignKey(Places, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -215,7 +214,15 @@ class PlaceCategories(models.Model):
     category = models.IntegerField()
     place = models.ForeignKey(Places, on_delete=models.CASCADE)
 
+    class Meta:
+        managed = False
+        db_table = "placeCategories"
+
 
 class Category(models.Model):
     id = models.IntegerField(primary_key=True)
     category = models.CharField(max_length=100)
+
+    class Meta:
+        managed = False
+        db_table = "category"

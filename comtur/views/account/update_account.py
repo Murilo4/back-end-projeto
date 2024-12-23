@@ -173,7 +173,6 @@ def password_reset(request):
         send_mail(
             'Reset your password',
             f'Use the link to reset your password: {reset_url}',
-            'from@example.com',
             [user.email],
             fail_silently=False,
         )

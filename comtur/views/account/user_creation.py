@@ -87,7 +87,8 @@ def create_user(request):
                       'phone': phone,
                       'user_type': 'Normal',
                       'password': cripted_password,
-                      'cpf': numeros_cpf
+                      'cpf': numeros_cpf,
+                      'photo': request.data.get('photo', None),
                       })
 
             if user_create.is_valid(raise_exception=True):
@@ -175,7 +176,8 @@ def create_user(request):
                       'phone': phone,
                       'user_type': 'Enterprise',
                       'password': cripted_password,
-                      'cnpj': numeros_cnpj
+                      'cnpj': numeros_cnpj,
+                      'photo': request.data.get("photo", None)
                       })
 
             if user_create.is_valid(raise_exception=True):
@@ -185,7 +187,6 @@ def create_user(request):
                 order = 1
                 for referencia in referencias:
                     link_name = Names.objects.get(id=referencia)
-                    print(link_name.name, link_name.id)
                     serializer_user = CreateUserName(
                         data={'name_id': link_name.id,
                               'user_id': user_id,
