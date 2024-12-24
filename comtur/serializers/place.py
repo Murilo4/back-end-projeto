@@ -59,15 +59,13 @@ class PlacePhotoGetSerializer(serializers.ModelSerializer):
 
 
 class UpdatePlaces(serializers.ModelSerializer):
-    workStart = serializers.TimeField(source='work_start',
-                                      required=False)
-    workStop = serializers.TimeField(source='work_stop',
-                                     required=False)
+    workStart = serializers.CharField(source="work_start", required=False)
+    workStop = serializers.CharField(source="work_stop", required=False)
 
     class Meta:
         model = Places
-        fields = 'description', 'type', 'category', 'locationX', 'locationY',
-    'workStart', 'workStop', 'about'
+        fields = ('description', 'type', 'locationX', 'locationY',
+                  'workStart', 'workStop', 'about')
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():

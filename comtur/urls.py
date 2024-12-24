@@ -16,6 +16,7 @@ from .views.place.create_place import create_place
 # from .views.place.delete_place import delete_place
 from .views.place.get_place import get_place
 from .views.place.update_place import update_place
+from .views.place.delete_place import delete_place
 
 
 urlpatterns = [
@@ -55,5 +56,6 @@ urlpatterns = [
          get_place, name="get_place"),
     path('update-place/',
          update_place, name="update_place"),
+    path('delete-place/', delete_place, name="delete_place"),
 
 ]
