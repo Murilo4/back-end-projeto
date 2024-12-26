@@ -2,14 +2,17 @@ from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ....serializers.address import CreateAddress, CreateHouseNumber
-from ....serializers.address import CreateNumberAddress, CreateState
-from ....serializers.address import CreateStateAddress
+from ....serializers.address import CreateState, createCity, CreateNeighborhood
+from ....serializers.address import CreateStreetAddress, CreateStreet
+from ....serializers.address import CreateNeighborAddress
+from ....serializers.Names import CreateNames
 from django.db import transaction
 import jwt
 import os
 from ....throttles import DailyRateThrottle, HourlyRateThrottle
 from ....throttles import MinuteRateThrottleAnon
-from ....models import HouseNumber, Address, State
+from ....models import HouseNumber, Address, State, City, Street, Neighborhood
+from ....models import NormalUser, Names
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
@@ -36,15 +39,26 @@ def create_address(request):
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get('id')
 
+        user = NormalUser.objects.get(id=user_id)
+
+        type_user = user.cpf or None
+
+        place_id = request.data.get('placeId', None)
+
         with transaction.atomic():
             numbers = request.data.get('number')
             state = request.data.get('state')
+            city = request.data.get('city')
+            street = request.data.get('street')
+            neighborhood = request.data.get('neighborhood')
+            address_type = request.data.get('addressType')
 
             number = [n.strip() for n in numbers.split() if n.strip()]
             state = state.lower()
 
-            created_number, referencias_number = create_numbers(number)
+            created_number, referencia_number = create_numbers(number)
             created_state, referencia_state = create_state(state)
+            created_city, referencia_city = create_city(city)
 
             if created_state is False:
                 return JsonResponse({'success': False,
@@ -56,16 +70,40 @@ def create_address(request):
                     "success": False,
                     "message": "Erro ao criar nome",
                 }, status=status.HTTP_400_BAD_REQUEST)
-            street = request.data.get('street')
+
+            if created_city is False:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Erro ao criar cidade",
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
             postal = request.data.get('postal')
-            new_address = {
-                'user_address': user_id,
-                'street': street,
-                'neighborhood': request.data.get('neighborhood'),
-                'city': request.data.get('city'),
-                'state': request.data.get('state'),
-                'postal': postal
-            }
+            try:
+                link_number = HouseNumber.objects.get(id=referencia_number)
+                get_state = State.objects.get(id=referencia_state)
+                get_city = City.objects.get(id=referencia_city)
+            except (HouseNumber.DoesNotExist, State.DoesNotExist):
+                return JsonResponse({"success": False,
+                                    "message": "Erro ao criar Endereço"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            if type_user is not None and place_id is None:
+                new_address = {
+                    'user_address': user_id,
+                    'city': get_city,
+                    'address_type': address_type,
+                    'state': get_state.id,
+                    'number': link_number.id,
+                    'postal': postal
+                }
+            if place_id:
+                new_address = {
+                    'place': place_id,
+                    'address_type': address_type,
+                    'city': get_city,
+                    'state': get_state.id,
+                    'number': link_number.id,
+                    'postal': postal
+                }
             create = CreateAddress(data=new_address)
             if create.is_valid(raise_exception=True):
                 create.save()
@@ -73,40 +111,31 @@ def create_address(request):
                 get_address = Address.objects.get(
                     user_address=user_id, street=street, postal=postal)
                 address_id = get_address.id
-                order = 1
-                for referencia in referencias_number:
-                    link_number = HouseNumber.objects.get(id=referencia)
-                    serializer_user = CreateNumberAddress(
-                        data={'house_number': link_number.id,
-                              'address': address_id})
+                created_street = create_street(
+                    street, address_id)
 
-                    if serializer_user.is_valid(raise_exception=True):
-                        serializer_user.save()
-                        order += 1
-                    else:
-                        return JsonResponse({"sucess": False,
-                                            "message":
-                                             "Erro ao criar número da casa"},
-                                            status=status.HTTP_400_BAD_REQUEST)
-                state_id = referencia_state.pop()
-                get_state = State.objects.get(id=state_id)
-                create_new_state = CreateStateAddress(
-                                                    data={
-                                                        'state': get_state.id,
-                                                        'address': address_id
-                                                        })
-                if create_new_state.is_valid(raise_exception=True):
-                    create_new_state.save()
-                    return JsonResponse({"sucess": True,
-                                         "message":
-                                         "endereço criado com sucesso"},
-                                        status=status.HTTP_201_CREATED)
-                else:
-                    return JsonResponse({"sucess": False,
-                                         "message":
-                                         "Não foi possivel criar o estado"},
+                created_neighborhood = create_neighborhood(
+                    neighborhood, address_id)
+
+                if created_neighborhood is False:
+                    return JsonResponse({"success": False,
+                                        "message": "Erro ao criar bairro"},
                                         status=status.HTTP_400_BAD_REQUEST)
 
+                if created_street is False:
+                    return JsonResponse({"success": False,
+                                        "message": "Erro ao criar rua"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+                return JsonResponse({"sucess": True,
+                                    "message":
+                                     "endereço criado com sucesso"},
+                                    status=status.HTTP_201_CREATED)
+            else:
+                return JsonResponse({"sucess": False,
+                                    "message":
+                                     "Não foi possivel criar o estado"},
+                                    status=status.HTTP_400_BAD_REQUEST)
     except jwt.ExpiredSignatureError:
         return JsonResponse({'success': False,
                             'message': 'Token expirado.'},
@@ -114,30 +143,28 @@ def create_address(request):
 
 
 def create_numbers(numbers: int):
-    referencias = []
     created_numbers = True
     for number in numbers:
         try:
             obj = HouseNumber.objects.get(number=number)
-            referencias.append(obj.id)
+            referencia = obj.id
         except HouseNumber.DoesNotExist:
             data = {"number": number}
             serializer = CreateHouseNumber(data=data)
             if serializer.is_valid(raise_exception=True):
                 obj = serializer.save()
                 new_name = HouseNumber.objects.get(number=obj.number)
-                referencias.append(new_name.id)
+                referencia = new_name.id
             else:
                 created_numbers = False
-    return created_numbers, referencias
+    return created_numbers, referencia
 
 
 def create_state(state):
-    referencias_state = []
     created_state = True
     try:
         obj = State.objects.get(state=state)
-        referencias_state.append(obj.id)
+        referencias_state = obj.id
     except State.DoesNotExist:
         test_data = {"state": state}
         serializer = CreateState(data=test_data)
@@ -145,7 +172,101 @@ def create_state(state):
             obj = serializer.save()
             new_state = State.objects.get(state=obj.state)
 
-            referencias_state.append(new_state.id)
+            referencias_state = new_state.id
         else:
             created_state = False
     return created_state, referencias_state
+
+
+def create_city(city):
+    created_city = True
+    try:
+        obj = City.objects.get(city=city)
+        referencias_city = obj.id
+    except City.DoesNotExist:
+        new_city = {"city": city}
+        serializer = createCity(data=new_city)
+        if serializer.is_valid(raise_exception=True):
+            obj = serializer.save()
+            new_city = City.objects.get(city=obj.city)
+            referencias_city = new_city.id
+        else:
+            created_city = False
+    return created_city, referencias_city
+
+
+def create_street(streets, address):
+    created_street = True
+    referencias_street = []
+    for street in streets:
+        try:
+            obj = Street.objects.get(street=street)
+            referencias_street.append(obj.id)
+        except Street.DoesNotExist:
+            new_street = {"street": street}
+            serializer = CreateStreet(data=new_street)
+            if serializer.is_valid(raise_exception=True):
+                obj = serializer.save()
+                new_street = Street.objects.get(street=obj.street)
+                referencias_street.append(new_street.id)
+
+    for referencia in referencias_street:
+        address_street = CreateStreetAddress(data={'address': address,
+                                                   'street': referencia})
+        if address_street.is_valid(raise_exception=True):
+            address_street.save()
+
+        else:
+            created_street = False
+    return created_street
+
+
+def create_neighborhood(neighborhood, address):
+    created_neighborhood = True
+    referencias_neighborhood = []
+    for neigh in neighborhood:
+        try:
+            obj = Neighborhood.objects.get(neighborhood=neigh)
+            referencias_neighborhood = obj.id
+        except Neighborhood.DoesNotExist:
+            new_neighborhood = {"neighborhood": neigh}
+            serializer = CreateNeighborhood(data=new_neighborhood)
+            if serializer.is_valid(raise_exception=True):
+                obj = serializer.save()
+                new_neighborhood = Neighborhood.objects.get(
+                    neighborhood=obj.neighborhood)
+                referencias_neighborhood.append(new_neighborhood.id)
+            else:
+                created_neighborhood = False
+
+    for referencia in referencias_neighborhood:
+        address_neighborhood = CreateNeighborAddress(
+                                                data={
+                                                    'address': address,
+                                                    'neighborhood': referencia
+                                                    })
+        if address_neighborhood.is_valid(raise_exception=True):
+            address_neighborhood.save()
+        else:
+            created_neighborhood = False
+    return created_neighborhood
+
+
+def create_names(name):
+    referencias = []
+    created_names = True
+    for nome in name:
+        nome_lower = nome.lower().strip()
+        try:
+            obj = Names.objects.get(name=nome_lower)
+            referencias.append(obj.id)
+        except Names.DoesNotExist:
+            test_data = {"name": nome_lower}
+            serializer = CreateNames(data=test_data)
+            if serializer.is_valid():
+                obj = serializer.save()
+                new_name = Names.objects.get(name=obj.name)
+                referencias.append(new_name.id)
+            else:
+                created_names = False
+    return created_names, referencias

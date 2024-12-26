@@ -95,6 +95,11 @@ class PlansConfig(models.Model):
         db_table = 'PlansConfig'
 
 
+class Neighborhood(models.Model):
+    id = models.IntegerField(primary_key=True)
+    neighborhood = models.CharField(max_length=255)
+
+
 class State(models.Model):
     id = models.IntegerField(primary_key=True)
     state = models.CharField(max_length=255)
@@ -113,40 +118,13 @@ class HouseNumber(models.Model):
         db_table = 'HouseNumber'
 
 
-class Address(models.Model):
+class City(models.Model):
     id = models.IntegerField(primary_key=True)
-    user_address = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
-    street = models.CharField(max_length=255)
-    neighborhood = models.CharField(max_length=255)
-    city = models.CharField(max_length=255)
-    postal = models.CharField(max_length=255)
-    neighborhood = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+    city = models.CharField(max_length=100)
 
     class Meta:
         managed = False
-        db_table = 'Address'
-
-
-class StateAddress(models.Model):
-    id = models.IntegerField(primary_key=True)
-    state = models.IntegerField()
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
-
-    class Meta:
-        managed = False
-        db_table = 'StateAddress'
-
-
-class NumberAddress(models.Model):
-    id = models.IntegerField(primary_key=True)
-    house_number = models.IntegerField()
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
-
-    class Meta:
-        managed = False
-        db_table = 'NumberAddress'
+        db_table = 'City'
 
 
 class Places(models.Model):
@@ -167,6 +145,42 @@ class Places(models.Model):
     class Meta:
         managed = False
         db_table = 'Places'
+
+
+class Address(models.Model):
+    id = models.IntegerField(primary_key=True)
+    user_address = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    state = models.ForeignKey(State, on_delete=models.CASCADE)
+    city = models.ForeignKey(City, on_delete=models.CASCADE)
+    postal = models.CharField(max_length=255)
+    number = models.ForeignKey(HouseNumber, on_delete=models.CASCADE)
+    address_type = models.CharField(max_length=255)
+    place = models.ForeignKey(Places, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'Address'
+
+
+class neighborhoodAddress(models.Model):
+    id = models.IntegerField(primary_key=True)
+    neighborhood = models.ForeignKey(Neighborhood, on_delete=models.CASCADE)
+    address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    neighbor_order = models.IntegerField()
+
+
+class Street(models.Model):
+    id = models.IntegerField(primary_key=True)
+    street = models.CharField(max_length=255)
+
+
+class addressStreet(models.Model):
+    id = models.IntegerField(primary_key=True)
+    street = models.ForeignKey(Street, on_delete=models.CASCADE)
+    address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    street_order = models.IntegerField()
 
 
 class PlacesPhotos(models.Model):

@@ -6,10 +6,10 @@ from .views.account.send_validation_code import email_validation
 from .views.account.send_validation_code import verify_email_code
 from .views.account.update_account import update_user
 from .views.account.delete_account import delete_user
-from .views.account.address.add_address import create_address
-from .views.account.address.get_address import get_one_address
-from .views.account.address.update_address import update_address
-from .views.account.address.delete_address import delete_address
+# from .views.account.address.add_address import create_address
+# from .views.account.address.get_address import get_one_address
+# from .views.account.address.update_address import update_address
+# from .views.account.address.delete_address import delete_address
 from .views.account.update_account import password_reset
 from .views.account.update_account import PasswordResetConfirm
 from .views.place.create_place import create_place
@@ -36,14 +36,14 @@ urlpatterns = [
     path("delete-user/",
          delete_user, name="delete_user"),
     # Address
-    path("create-address/",
-         create_address, name="create_address"),
-    path("get-address/",
-         get_one_address, name="get_one_address"),
-    path("update-address/",
-         update_address, name="update_address"),
-    path("delete-address/",
-         delete_address, name="delete_address"),
+#     path("create-address/",
+#          create_address, name="create_address"),
+#     path("get-address/",
+#          get_one_address, name="get_one_address"),
+#     path("update-address/",
+#          update_address, name="update_address"),
+#     path("delete-address/",
+#          delete_address, name="delete_address"),
     # Password Reset
     path('request-reset/',
          password_reset, name='request-reset'),

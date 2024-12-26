@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from ..models import Address, HouseNumber, NumberAddress, StateAddress
-from ..models import State
+from ..models import Address, HouseNumber, addressStreet
+from ..models import State, City, Street, neighborhoodAddress
+from ..models import Neighborhood
 
 
 class CreateAddress(serializers.ModelSerializer):
@@ -45,28 +46,6 @@ class CreateHouseNumber(serializers.ModelSerializer):
         return number
 
 
-class CreateNumberAddress(serializers.ModelSerializer):
-    class Meta:
-        model = NumberAddress
-        fields = ('house_number', 'address')
-
-    def create(self, validated_data):
-        number = NumberAddress(**validated_data)
-        number.save()
-        return number
-
-
-class CreateStateAddress(serializers.ModelSerializer):
-    class Meta:
-        model = StateAddress
-        fields = ('state', 'address')
-
-    def create(self, validated_data):
-        state = StateAddress(**validated_data)
-        state.save()
-        return state
-
-
 class CreateState(serializers.ModelSerializer):
     class Meta:
         model = State
@@ -76,3 +55,33 @@ class CreateState(serializers.ModelSerializer):
         state = State(**validated_data)
         state.save()
         return state
+
+
+class createCity(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = ['city']
+
+
+class CreateStreet(serializers.ModelSerializer):
+    class Meta:
+        model = Street
+        fields = ['street']
+
+
+class CreateStreetAddress(serializers.ModelSerializer):
+    class Meta:
+        model = addressStreet
+        fields = ['street', 'address']
+
+
+class CreateNeighborhood(serializers.ModelSerializer):
+    class Meta:
+        model = Neighborhood
+        fields = ['neighborhood']
+
+
+class CreateNeighborAddress(serializers.ModelSerializer):
+    class Meta:
+        model = neighborhoodAddress
+        fields = ['neighborhood', 'address']
