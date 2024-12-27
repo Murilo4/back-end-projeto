@@ -22,3 +22,14 @@ class CreateUserName(serializers.ModelSerializer):
         username = UserName(**validated_data)
         username.save()
         return username
+
+
+class CreateUserNameAddress(serializers.ModelSerializer):
+    class Meta:
+        model = UserName
+        fields = ['name_id', 'address', 'create_order']
+
+    def create(self, validated_data):
+        username = UserName(**validated_data)
+        username.save()
+        return username
