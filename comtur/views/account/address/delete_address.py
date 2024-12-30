@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ....models import Address, addressStreet, neighborhoodAddress
+from ....models import UserName
 import jwt
 import os
 from ....throttles import DailyRateThrottle, HourlyRateThrottle
@@ -38,11 +39,43 @@ def delete_address(request):
 
         with transaction.atomic():
             try:
-                addressStreet.objects.get(address=address).delete()
-                neighborhoodAddress.objects.get(address=address).delete()
+                address_name = addressStreet.objects.filter(address=address)
+                for old_name in address_name:
+                    name = old_name.street
+                    if addressStreet.objects.filter(
+                                                    street=name).count() == 1:
+                        old_name.delete()
+                        name.delete()
+                    else:
+                        old_name.delete()
+
+                # Handle deletion for neighborhoodAddress
+                neighborhood_addresses = neighborhoodAddress.objects.filter(
+                    address=address)
+                for old_neigh in neighborhood_addresses:
+                    neighbor = old_neigh.neighborhood
+                    if neighborhoodAddress.objects.filter(
+                                                         neighborhood=neighbor
+                                                         ).count() == 1:
+                        old_neigh.delete()
+                        neighbor.delete()
+                    else:
+                        old_neigh.delete()
+
+                address_name = UserName.objects.filter(address=address)
+                for old_name in address_name:
+                    name = old_name.name_id
+                    if UserName.objects.filter(
+                                                name_id=name).count() == 1:
+                        old_name.delete()
+                        name.delete()
+                    else:
+                        old_name.delete()
                 if address_to_delete:
                     address_to_delete.delete()
-            except (addressStreet, neighborhoodAddress).DoesNotExist:
+
+            except (addressStreet.DoesNotExist,
+                    neighborhoodAddress.DoesNotExist):
                 pass
         return JsonResponse({'success': True,
                              'message': 'Endereço deletado com sucesso!'},

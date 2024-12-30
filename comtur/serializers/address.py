@@ -8,7 +8,8 @@ class CreateAddress(serializers.ModelSerializer):
 
     class Meta:
         model = Address
-        fields = ('user_address', 'number', 'state', 'city', 'postal')
+        fields = ('user_address', 'number', 'state', 'city', 'postal',
+                  'address_type')
 
     def create(self, validated_data):
         address = Address(**validated_data)
@@ -19,15 +20,52 @@ class CreateAddress(serializers.ModelSerializer):
 class UpdateAddress(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ('city', 'postal',
-                  'number', 'state')
+        fields = ['postal', 'address_type']
+
+    def update(self, instance, validated_data):
+
+        instance.address_type = validated_data.get('address_type',
+                                                   instance.address_type)
+        instance.postal = validated_data.get('postal', instance.postal)
+        instance.save()
+
+        return instance
+
+
+class UpdateAddressState(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['state']
+
+    def update(self, instance, validated_data):
+
+        instance.state = validated_data.get('state', instance.state)
+        instance.save()
+
+        return instance
+
+
+class UpdateAddressNumber(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['number']
 
     def update(self, instance, validated_data):
 
         instance.number = validated_data.get('number', instance.number)
+        instance.save()
+
+        return instance
+
+
+class UpdateAddressCity(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['city']
+
+    def update(self, instance, validated_data):
+
         instance.city = validated_data.get('city', instance.city)
-        instance.postal = validated_data.get('postal', instance.postal)
-        instance.state = validated_data.get('state', instance.state)
         instance.save()
 
         return instance

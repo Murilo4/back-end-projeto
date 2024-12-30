@@ -241,7 +241,7 @@ def create_neighborhood(neighborhood, address):
     for neigh in neighborhood:
         try:
             obj = Neighborhood.objects.get(neighborhood=neigh)
-            referencias_neighborhood = obj.id
+            referencias_neighborhood.append(obj.id)
         except Neighborhood.DoesNotExist:
             new_neighborhood = {"neighborhood": neigh}
             serializer = CreateNeighborhood(data=new_neighborhood)

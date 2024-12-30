@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ....models import Address, neighborhoodAddress, City, HouseNumber
+from ....models import Address, neighborhoodAddress, City, HouseNumber, State
 from ....models import addressStreet, Neighborhood, Street, UserName, Names
 import jwt
 import os
@@ -42,12 +42,12 @@ def get_one_address(request):
                                 status=status.HTTP_404_NOT_FOUND)
         try:
             neighbor_address = neighborhoodAddress.objects.filter(
-                address=address.id).order_by('create_order')
+                address=address.id).order_by('neighbor_order')
             new_neighbor = []
             for name in neighbor_address:
                 try:
                     name_obj = Neighborhood.objects.get(
-                        id=name.neighborhood)
+                        id=name.neighborhood.id)
                     new_neighbor.append(name_obj.neighborhood)
                 except Neighborhood.DoesNotExist:
                     continue
@@ -59,13 +59,13 @@ def get_one_address(request):
                                 status=status.HTTP_404_NOT_FOUND)
         try:
             name_address = addressStreet.objects.filter(
-                address=address.id).order_by('create_order')
+                address=address.id).order_by('street_order')
             full_name = []
             for name in name_address:
                 try:
                     name_obj = Street.objects.get(
-                        id=name.street)
-                    full_name.append(name_obj.neighborhood)
+                        id=name.street.id)
+                    full_name.append(name_obj.street)
                 except Street.DoesNotExist:
                     continue
             full_street_formated = " ".join(full_name)
@@ -82,7 +82,7 @@ def get_one_address(request):
                 try:
                     name_obj = Names.objects.get(
                         id=name.name_id)
-                    full_name.append(name_obj.neighborhood)
+                    full_name.append(name_obj.name)
                 except Names.DoesNotExist:
                     continue
 
@@ -93,18 +93,19 @@ def get_one_address(request):
                                 status=status.HTTP_404_NOT_FOUND)
 
         try:
-            city = City.objects.get(id=address.city)
-            number = HouseNumber.objects.get(id=address.number)
-        except (City, HouseNumber).DoesNotExist:
+            city = City.objects.get(id=address.city.id)
+            number = HouseNumber.objects.get(id=address.number.id)
+            state = State.objects.get(id=address.state.id)
+        except (City.DoesNotExist, HouseNumber.DoesNotExist):
             return JsonResponse({'success': False,
                                  'message':
                                  'Não foi possivel retornar o endereço'},
                                 status=status.HTTP_404_NOT_FOUND)
         address_data = {
-            'type': address.type,
+            'type': address.address_type,
             'name': full_name_address,
             "street": full_street_formated,
-            "state": name.state,
+            "state": state.state,
             "number": number.number,
             "neighborhood": full_neighbor_formated,
             "city": city.city,
