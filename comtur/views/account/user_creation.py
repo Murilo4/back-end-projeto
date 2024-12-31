@@ -6,6 +6,7 @@ from ...serializers.Names import CreateNames, CreateUserName
 from ...serializers.NormalUser import CreateNormalUser
 import re
 from django.db import transaction
+from datetime import datetime
 import bcrypt
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
 from ...throttles import MinuteRateThrottleAnon
@@ -177,7 +178,8 @@ def create_user(request):
                       'user_type': 'Enterprise',
                       'password': cripted_password,
                       'cnpj': numeros_cnpj,
-                      'photo': request.data.get("photo", None)
+                      'photo': request.data.get("photo", None),
+                      'last_pass_change': datetime.now(),
                       })
 
             if user_create.is_valid(raise_exception=True):

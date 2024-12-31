@@ -111,7 +111,6 @@ def create_place(request):
 
 
 def get_or_create_category(place_create, categories):
-    print(categories)
     category_valid = True
     categories_ids = []
     for category in categories:

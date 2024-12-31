@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from ..models import NormalUser
+from ..models import NormalUser, lastPasswords
 
 
 class CreateNormalUser(serializers.ModelSerializer):
 
     class Meta:
         model = NormalUser
-        fields = 'email', 'password', 'cpf', 'phone', 'cnpj', 'photo'
+        fields = ('email', 'password', 'cpf', 'phone', 'cnpj',
+                  'photo', 'last_pass_change')
 
     def create(self, validated_data):
         user = NormalUser(**validated_data)
@@ -44,6 +45,31 @@ class UpdateValidationNormalUser(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.is_validated = validated_data.get(
             'is_validated', instance.is_validated)
+
+        instance.save()
+
+        return instance
+
+
+class SaveOldPassword(serializers.ModelSerializer):
+    class Meta:
+        model = lastPasswords
+        fields = 'password_hash', 'user', 'changed_at'
+
+    def create(self, validated_data):
+        last_password = lastPasswords(**validated_data)
+        last_password.save()
+        return last_password
+
+
+class UpdateaPassword(serializers.ModelSerializer):
+    class Meta:
+        model = NormalUser
+        fields = 'passoword'
+
+    def update(self, instance, validated_data):
+        instance.passoword = validated_data.get(
+            'passoword', instance.passoword)
 
         instance.save()
 

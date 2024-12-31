@@ -1,9 +1,10 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import Names, NormalUser, UserName
+from ...models import Names, NormalUser, UserName, lastPasswords
 from ...serializers.Names import CreateNames, CreateUserName
-from ...serializers.NormalUser import UpdateNormalUser
+from ...serializers.NormalUser import UpdateNormalUser, SaveOldPassword
+from ...serializers.NormalUser import UpdateaPassword
 import jwt
 import os
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
@@ -16,6 +17,8 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from dotenv import load_dotenv
+import bcrypt
+from datetime import datetime
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
@@ -200,10 +203,69 @@ def PasswordResetConfirm(request, uidb64, token):
         user = None
     if user is not None and account_activation_token.check_token(user, token):
         new_password = request.data.get('password')
-        user.set_password(new_password)
-        user.save()
-        return JsonResponse({"message": "Password has been reset!"},
-                            status=status.HTTP_200_OK)
+        valid_password = validate_password(new_password)
+        if valid_password:
+            same_last_password, allow_to_chg = same_password(
+                new_password, user)
+            if same_last_password:
+                return JsonResponse({'success': False,
+                                    'message':
+                                     'Você não pode usar a mesma senha'},
+                                    status=status.HTTP_406_NOT_ACCEPTABLE)
+            if allow_to_chg:
+                password = cript_password(new_password)
+                serializer = SaveOldPassword(data={
+                                            'password_hash': user.password,
+                                            'user': user.id,
+                                            'changed_at': datetime.now()})
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+
+                new_pass = UpdateaPassword(data={'password': password})
+                if new_pass.is_valid(raise_exception=True):
+                    new_pass.save()
+                return JsonResponse({"message": "Password has been reset!"},
+                                    status=status.HTTP_200_OK)
     else:
         return JsonResponse({"message": "Invalid token"},
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+def validate_password(password):
+    if password is None or len(password) < 8:
+        return False
+
+    has_upper = any(char.isupper() for char in password)
+    has_digit = any(char.isnumeric() for char in password)
+
+    if has_upper and has_digit:
+        return True
+    else:
+        False
+
+
+def cript_password(password):
+    if not isinstance(password, str):
+        raise ValueError("A senha deve ser uma string.")
+
+    encoded_password = password.encode('utf-8')
+
+    cripted_password = bcrypt.hashpw(encoded_password, bcrypt.gensalt())
+    return cripted_password.decode('utf-8')
+
+
+def same_password(password, user):
+    same_pass = False
+    allow_to_change = True
+    has_last_passwords = lastPasswords.objects.filter(user=user.id).exists()
+    if has_last_passwords:
+        last_password = lastPasswords.objects.filter(user=user.id)
+        for senha_antiga in last_password:
+            if bcrypt.checkpw(
+                password.encode('utf-8'),
+                senha_antiga.password_hash.encode(
+                                            'utf-8')):
+                same_pass = True
+                allow_to_change = False
+                return same_pass, allow_to_change
+    return same_pass, allow_to_change
