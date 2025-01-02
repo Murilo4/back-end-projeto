@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import NormalUser, UserName, Names
+from ...models import NormalUser, UserName, Names, Subscription
 import jwt
 import os
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
@@ -77,6 +77,14 @@ def get_user_profile(request):
             'phone': user.phone,
             'photo': user.photo
         }
+
+        plan = Subscription.objects.get(user=user_id)
+
+        plan_data = {
+            'dataTime': plan.subscription_data,
+            'imagesAllowed': plan.images_allowed,
+            'videosAllowed': plan.videos_allowed
+        }
         # user_data_json = json.dumps(user_data).encode('utf-8')
 
         # ciphertext = cipher_suite.encrypt(user_data_json)
@@ -84,7 +92,8 @@ def get_user_profile(request):
         return JsonResponse({
             "success": True,
             "message": "Dados do usuário recuperados com sucesso.",
-            "data": user_data
+            "userData": user_data,
+            "subscriptionData": plan_data
         }, status=status.HTTP_200_OK)
 
     except NormalUser.DoesNotExist:

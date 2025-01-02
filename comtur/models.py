@@ -142,6 +142,8 @@ class Subscription(models.Model):
     user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
     user_type = models.CharField(max_length=10)
     subscription_data = models.DateTimeField(auto_now=True)
+    images_allowed = models.IntegerField()
+    videos_allowed = models.IntegerField()
 
     class Meta:
         managed = False
@@ -154,6 +156,7 @@ class Plans(models.Model):
     price = models.IntegerField()
     Subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     plan_type = models.CharField(max_length=255)
+    plan_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -165,9 +168,8 @@ class Plans(models.Model):
 class PlansConfig(models.Model):
     id = models.IntegerField(primary_key=True)
     plan = models.ForeignKey(Plans, on_delete=models.CASCADE)
-    number_images = models.IntegerField()
+    images_allowed = models.IntegerField()
     videos_allowed = models.BooleanField()
-    number_videos = models.IntegerField()
     points_multiplier = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
