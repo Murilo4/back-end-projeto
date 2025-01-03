@@ -203,7 +203,6 @@ def create_city(city):
 def create_street(streets, address):
     created_street = True
     referencias_street = []
-    order = 1
 
     for street in streets:
         try:
@@ -219,7 +218,7 @@ def create_street(streets, address):
                 new_street = Street.objects.get(street=street)
                 referencias_street.append(new_street.id)
 
-        # Criando o relacionamento entre o endereço e a rua
+    order = 1
     for referencia in referencias_street:
         address_street = CreateStreetAddress(data={
             'address': address,
@@ -228,7 +227,7 @@ def create_street(streets, address):
         })
         if address_street.is_valid(raise_exception=True):
             address_street.save()
-            order += 1  # Incrementa o 'order' após salvar
+            order += 1
         else:
             created_street = False
 
@@ -252,9 +251,8 @@ def create_neighborhood(neighborhood, address):
                 referencias_neighborhood.append(new_neighborhood.id)
             else:
                 created_neighborhood = False
-
+    order = 1
     for referencia in referencias_neighborhood:
-        order = 1
         address_neighborhood = CreateNeighborAddress(
                                                 data={
                                                     'address': address,
@@ -286,9 +284,8 @@ def create_names(name, address):
                 referencias.append(new_name.id)
             else:
                 created_names = False
-
+    order = 1
     for referencia in referencias:
-        order = 1
         username = CreateUserNameAddress(data={
                                 'address': address,
                                 'name_id': referencia,
