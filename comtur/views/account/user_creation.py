@@ -20,6 +20,20 @@ def create_user(request):
         return JsonResponse({"sucess": False,
                              "message": "Invalid request method"},
                             status=status.HTTP_400_BAD_REQUEST)
+
+    # token = request.data.get('token')
+    # if not token:
+    #     return JsonResponse({"success": False,
+    #                          "message": "Token is missing"},
+    #                         status=status.HTTP_400_BAD_REQUEST)
+    # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    # userName = payload.get('username')
+    # email = payload.get('email')
+    # phone = payload.get('phone')
+    # password = payload.get('password')
+    # cpf = payload.get('cpf')
+    # cnpj = payload.get('cnpj')
+
     userName: str = request.data.get("username")
     email: str = request.data.get("email")
     phone = request.data.get("phone")

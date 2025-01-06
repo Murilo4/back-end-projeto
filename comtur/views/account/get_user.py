@@ -7,7 +7,7 @@ import os
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
 from ...throttles import MinuteRateThrottle
 from cryptography.fernet import Fernet
-# import json
+# from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
@@ -85,17 +85,37 @@ def get_user_profile(request):
             'imagesAllowed': plan.images_allowed,
             'videosAllowed': plan.videos_allowed
         }
-        # user_data_json = json.dumps(user_data).encode('utf-8')
+        # payload_user = {
+        #     'username': full_name,
+        #     'email': user.email,
+        #     'cpf': user.cpf,
+        #     'cnpj': user.cnpj,
+        #     'phone': user.phone,
+        #     'photo': user.photo,
+        #     'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
+        # }
+        # token = jwt.encode(payload_user, SECRET_KEY, algorithm='HS256')
+        # payload_subscription = {
+        #     'dataTime': plan.subscription_data,
+        #     'imagesAllowed': plan.images_allowed,
+        #     'videosAllowed': plan.videos_allowed,
+        #     'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
+        # }
+        # token_sub = jwt.encode(payload_subscription,
+        # SECRET_KEY, algorithm='HS256')
 
-        # ciphertext = cipher_suite.encrypt(user_data_json)
-
+        # return JsonResponse({
+        #     "success": True,
+        #     "message": "Dados do usuário recuperados com sucesso.",
+        #     "userData": token,
+        #     "subscriptionData": token_sub
+        # }, status=status.HTTP_200_OK)
         return JsonResponse({
             "success": True,
             "message": "Dados do usuário recuperados com sucesso.",
             "userData": user_data,
             "subscriptionData": plan_data
         }, status=status.HTTP_200_OK)
-
     except NormalUser.DoesNotExist:
         return JsonResponse({
             "success": False,

@@ -24,7 +24,15 @@ def login_user_with_cpf(request):
     cpf = request.data.get("cpf")
     cnpj = request.data.get("cnpj")
     password = request.data.get("password")
-
+    # token_data = request.data.get('token')
+    # if not token_data:
+    #     return JsonResponse({"success": False,
+    #                          "message": "Token is missing"},
+    #                          status=status.HTTP_400_BAD_REQUEST)
+    # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    # password = payload.get('password')
+    # cpf = payload.get('cpf')
+    # cnpj = payload.get('cnpj')
     if not cpf and not cnpj:
         return JsonResponse({
             "success": False,

@@ -43,9 +43,24 @@ def update_user(request):
 
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get('id')
-
+        token = request.data.get('token')
+        # token_data = request.data.get('token')
+        # if not token_data:
+        #     return JsonResponse({"success": False,
+        #                          "message": "Token is missing"},
+        #                         status=status.HTTP_400_BAD_REQUEST)
+        # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        # userName = payload.get('username')
+        # email = payload.get('email')
+        # phone = payload.get('phone')
+        # cpf = payload.get('cpf')
+        # cnpj = payload.get('cnpj')
         user = NormalUser.objects.get(id=user_id)
         phone = request.data.get('phone', None)
+        cpf = request.data.get('cpf', None)
+        cnpj = request.data.get('cnpj', None)
+        email = request.data.get('email', None)
+        update_name = request.data.get('username')
         if phone:
             validate = validate_phoneNumber(phone)
             if not validate:
@@ -53,21 +68,18 @@ def update_user(request):
                                     "message": "Número de telefone inválido."
                                      }, status=status.HTTP_400_BAD_REQUEST)
 
-        cpf = request.data.get('cpf', None)
         if cpf:
             validate = validate_cpf(cpf)
             if not validate:
                 return JsonResponse({"success": False,
                                      "message": "CPF inválido."
                                      }, status=status.HTTP_400_BAD_REQUEST)
-        cnpj = request.data.get('cnpj', None)
         if cnpj:
             validate = validate_cnpj(cnpj)
             if not validate:
                 return JsonResponse({"success": False,
                                     "message": "CNPJ inválido."},
                                     status=status.HTTP_400_BAD_REQUEST)
-        email = request.data.get('email', None)
         if email:
             validate = validate_useremail(email)
             if not validate:
@@ -94,8 +106,6 @@ def update_user(request):
                     names.append(name_obj.name)
                 except Names.DoesNotExist:
                     continue
-
-            update_name = request.data.get('username')
 
             full_name_from_db = " ".join(names).lower().strip()
             update_name = request.data.get('username', '').lower().strip()

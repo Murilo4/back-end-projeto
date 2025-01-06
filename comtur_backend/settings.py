@@ -108,6 +108,8 @@ DATABASES = {
     }
 }
 
+SMS_BACKEND = 'sms.backends.console.SmsBackend'
+
 email = os.getenv('EMAIL')
 email_pass = os.getenv('EMAIL_PASS')
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
