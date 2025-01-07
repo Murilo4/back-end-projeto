@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import Category, NormalUser, Subscription, Plans, PlansConfig
+from ...models import Category, NormalUser, Subscription
 from ...models import Places
 from ...serializers.place import CreatePlace, CreateCategory, CreatePlaceCat
 from ...serializers.place import CreatePhotos
@@ -78,14 +78,8 @@ def create_place(request):
         number_images = 3
         try:
             user_sub = Subscription.objects.get(user=user)
-            user_pan = Plans.objects.get(subscription=user_sub.id)
-            plan_config = PlansConfig.objects.get(plan=user_pan)
-            number_images = plan_config.number_images
+            number_images = user_sub.number_images
         except Subscription.DoesNotExist:
-            pass
-        except Plans.DoesNotExist:
-            pass
-        except PlansConfig.DoesNotExist:
             pass
 
         photos: list = request.data.get('photos', [])

@@ -13,11 +13,15 @@ from .views.account.address.delete_address import delete_address
 from .views.account.update_account import password_reset
 from .views.account.update_account import PasswordResetConfirm
 from .views.place.create_place import create_place
-# from .views.place.delete_place import delete_place
+from .views.place.delete_place import delete_place
 from .views.place.get_place import get_place
 from .views.place.update_place import update_place
-from .views.place.delete_place import delete_place
-from .views.account.send_sms import send_sms_msg
+from .views.user_place.add_comment import create_comment
+from .views.user_place.update_comment import update_comment
+from .views.user_place.add_rating import create_rating
+from .views.user_place.update_rating import update_rating
+from .views.user_place.add_favorite import set_favorite
+# from .views.account.send_sms import send_sms_msg
 
 
 urlpatterns = [
@@ -52,13 +56,18 @@ urlpatterns = [
          PasswordResetConfirm, name='password-reset-confirm'),
     path('create-place/',
          create_place, name="create_place"),
-    # path('delete-place/', delete_place, name="delete_place"),
+    path('delete-place/', delete_place, name="delete_place"),
     path('get-place/',
          get_place, name="get_place"),
     path('update-place/',
          update_place, name="update_place"),
     path('delete-place/', delete_place, name="delete_place"),
+    # user place
+    path('create-comment/', create_comment, name='create_comment'),
+    path('update-comment/', update_comment, name='update_comment'),
+    path('create-rating/', create_rating, name='create_rating'),
+    path('update-rating/', update_rating, name='update_rating'),
+    path('set-favorite/', set_favorite, name='set_favorite'),
 
-    path('send-sms/', send_sms_msg, name='send_sms'),
-
+    # path('send-sms/', send_sms_msg, name='send_sms_msg'),
 ]

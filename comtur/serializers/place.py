@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from ..models import Places, Category, PlaceCategories, PlacesPhotos
+from ..models import UserPlaces, PlacesComments, PlacesRating
 
 
 class CreatePlace(serializers.ModelSerializer):
@@ -74,6 +75,19 @@ class UpdatePlaces(serializers.ModelSerializer):
         return instance
 
 
+class UpdatePlacesUsers(serializers.ModelSerializer):
+
+    class Meta:
+        model = Places
+        fields = ('comments_number', 'rating_number')
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
 class CreatePhotos(serializers.ModelSerializer):
     class Meta:
         model = PlacesPhotos
@@ -87,5 +101,85 @@ class CreatePhotos(serializers.ModelSerializer):
 
 class PlaceCommentsGetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlacesPhotos
-        fields = ('imgUrl', 'description')
+        model = PlacesComments
+        fields = ('comment')
+
+
+class CreateUserPlace(serializers.ModelSerializer):
+    class Meta:
+        model = UserPlaces
+        fields = ('user_place', 'place')
+
+    def create(self, validated_data):
+        user_place = UserPlaces(**validated_data)
+        user_place.save()
+        return user_place
+
+
+class CreatePlaceRating(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesRating
+        fields = ('rating', 'place_rating', 'user_rating')
+
+    def create(self, validated_data):
+        rating = PlacesRating(**validated_data)
+        rating.save()
+        return rating
+
+
+class CreatePlaceComment(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesComments
+        fields = ('comment', 'place_comment', 'user_comment')
+
+    def create(self, validated_data):
+        comment = PlacesComments(**validated_data)
+        comment.save()
+        return comment
+
+
+class UpdateUserPlace(serializers.ModelSerializer):
+    class Meta:
+        model = UserPlaces
+        fields = ('user_place', 'place', 'favorite')
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class CreateUserPlaceFavorite(serializers.ModelSerializer):
+    class Meta:
+        model = UserPlaces
+        fields = ('user_place', 'place', 'favorite')
+
+    def create(self, validated_data):
+        user_place = UserPlaces(**validated_data)
+        user_place.save()
+        return user_place
+
+
+class UpdatePlaceComment(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesComments
+        fields = ['comment']
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class UpdatePlaceRating(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesRating
+        fields = ['rating']
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

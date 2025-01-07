@@ -40,8 +40,8 @@ class lastPasswords(models.Model):
 class Places(models.Model):
     id = models.IntegerField(primary_key=True)
     description = models.TextField()
-    rating = models.IntegerField(null=True, blank=True)
     rating_number = models.IntegerField(null=True, blank=True)
+    comments_number = models.IntegerField(null=True, blank=True)
     type = models.CharField(max_length=255)
     locationX = models.TextField(null=True, blank=True)
     locationY = models.TextField(null=True, blank=True)
@@ -223,10 +223,24 @@ class PlacesPhotos(models.Model):
         db_table = 'PlacesPhotos'
 
 
+class UserPlaces(models.Model):
+    id = models.IntegerField(primary_key=True)
+    user_place = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    place = models.ForeignKey(Places, on_delete=models.CASCADE)
+    favorite = models.BooleanField()
+    created_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'userPlaces'
+
+
 class PlacesComments(models.Model):
     id = models.IntegerField(primary_key=True)
     comment = models.TextField()
     place_comment = models.ForeignKey(Places, on_delete=models.CASCADE)
+    user_comment = models.ForeignKey(UserPlaces, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -235,19 +249,17 @@ class PlacesComments(models.Model):
         db_table = 'PlacesComments'
 
 
-class UserPlaces(models.Model):
+class PlacesRating(models.Model):
     id = models.IntegerField(primary_key=True)
-    user_place = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
-    place_user = models.ForeignKey(Places, on_delete=models.CASCADE)
-    favorite = models.BooleanField()
-    comments = models.ForeignKey(PlacesComments, on_delete=models.CASCADE)
     rating = models.IntegerField()
+    place_rating = models.ForeignKey(Places, on_delete=models.CASCADE)
+    user_rating = models.ForeignKey(UserPlaces, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = False
-        db_table = 'userPlaces'
+        db_table = 'PlacesRating'
 
 
 class PlaceCategories(models.Model):
