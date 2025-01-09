@@ -3,16 +3,16 @@ from django.http import JsonResponse
 from rest_framework import status
 from django.db import transaction
 from dotenv import load_dotenv
-from ....models import Address, HouseNumber, Neighborhood, neighborhoodAddress
-from ....models import Street, addressStreet, City
-from ....serializers.address import UpdateAddress, CreateHouseNumber
-from ....serializers.address import State, CreateNeighborhood, CreateStreet
-from ....serializers.address import CreateState, CreateNeighborAddress
-from ....serializers.address import UpdateAddressState, createCity
-from ....serializers.address import CreateStreetAddress, UpdateAddressNumber
-from ....serializers.address import UpdateAddressCity
-from ....throttles import DailyRateThrottle, HourlyRateThrottle
-from ....throttles import MinuteRateThrottleAnon
+from ...models import Address, HouseNumber, Neighborhood, neighborhoodAddress
+from ...models import Street, addressStreet, City
+from ...serializers.address import UpdateAddress, CreateHouseNumber
+from ...serializers.address import State, CreateNeighborhood, CreateStreet
+from ...serializers.address import CreateState, CreateNeighborAddress
+from ...serializers.address import UpdateAddressState, createCity
+from ...serializers.address import CreateStreetAddress, UpdateAddressNumber
+from ...serializers.address import UpdateAddressCity
+from ...throttles import DailyRateThrottle, HourlyRateThrottle
+from ...throttles import MinuteRateThrottleAnon
 import jwt
 import os
 

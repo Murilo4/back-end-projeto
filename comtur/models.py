@@ -279,3 +279,23 @@ class Category(models.Model):
     class Meta:
         managed = False
         db_table = "category"
+
+
+class PlacesGroups(models.Model):
+    id = models.IntegerField(primary_key=True)
+    group_name = models.CharField(max_length=255)
+    main_place = models.ForeignKey(Places, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = "placesGroups"
+
+
+class PlacesBranch(models.Model):
+    id = models.IntegerField(primary_key=True)
+    branch = models.ForeignKey(Places, on_delete=models.CASCADE)
+    place_group = models.ForeignKey(PlacesGroups, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = "placesBranch"

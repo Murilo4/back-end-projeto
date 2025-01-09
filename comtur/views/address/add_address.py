@@ -1,18 +1,18 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ....serializers.address import CreateAddress, CreateHouseNumber
-from ....serializers.address import CreateState, createCity, CreateNeighborhood
-from ....serializers.address import CreateStreetAddress, CreateStreet
-from ....serializers.address import CreateNeighborAddress
-from ....serializers.Names import CreateNames, CreateUserNameAddress
+from ...serializers.address import CreateAddress, CreateHouseNumber
+from ...serializers.address import CreateState, createCity, CreateNeighborhood
+from ...serializers.address import CreateStreetAddress, CreateStreet
+from ...serializers.address import CreateNeighborAddress
+from ...serializers.Names import CreateNames, CreateUserNameAddress
 from django.db import transaction
 import jwt
 import os
-from ....throttles import DailyRateThrottle, HourlyRateThrottle
-from ....throttles import MinuteRateThrottleAnon
-from ....models import HouseNumber, Address, State, City, Street, Neighborhood
-from ....models import Names
+from ...throttles import DailyRateThrottle, HourlyRateThrottle
+from ...throttles import MinuteRateThrottleAnon
+from ...models import HouseNumber, Address, State, City, Street, Neighborhood
+from ...models import Names
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')

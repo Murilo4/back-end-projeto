@@ -1,12 +1,12 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ....models import Address, addressStreet, neighborhoodAddress
-from ....models import UserName
+from ...models import Address, addressStreet, neighborhoodAddress
+from ...models import UserName
 import jwt
 import os
-from ....throttles import DailyRateThrottle, HourlyRateThrottle
-from ....throttles import MinuteRateThrottle
+from ...throttles import DailyRateThrottle, HourlyRateThrottle
+from ...throttles import MinuteRateThrottle
 from django.db import transaction
 from dotenv import load_dotenv
 load_dotenv()

@@ -1,15 +1,17 @@
 from rest_framework.decorators import api_view, throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import NormalUser, UserName
+from ...models import NormalUser, UserName, Address
 import jwt
 import os
 from ...throttles import DailyRateThrottle, HourlyRateThrottle
 from ...throttles import MinuteRateThrottle
 from django.db import transaction
+import requests
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+ADDRESS_API_URL = os.getenv('ADDRESS_API_URL')
 
 
 @api_view(['DELETE'])
@@ -30,6 +32,7 @@ def delete_user(request):
         token = auth_header.split(' ')[1]
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get('id')
+        delete_address = request.data.get('deleteAddress', False)
 
         try:
             user = NormalUser.objects.get(id=user_id)
@@ -40,6 +43,32 @@ def delete_user(request):
             }, status=status.HTTP_404_NOT_FOUND)
 
         with transaction.atomic():
+            type_user = user.user_type
+            if type_user == 'normal':
+                user_address = Address.objects.get(user_id=user_id)
+                data = {'addressId': user_address.id}
+                response = requests.delete(f'{ADDRESS_API_URL}/address/',
+                                           json=data)
+                if response.status_code != 200:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Erro ao deletar endereço.'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            elif type_user == 'enterprise':
+                try:
+                    user_address = Address.objects.get(user_id=user_id)
+                    if delete_address:
+                        data = {'addressId': user_address.id}
+                        response = requests.delete(
+                            f'{ADDRESS_API_URL}/address/',
+                            json=data)
+                        if response.status_code != 200:
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Erro ao deletar endereço.'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                except Address.DoesNotExist:
+                    pass
             deleted_usernames = UserName.objects.filter(
                 user_id=user_id).delete()
             if deleted_usernames:

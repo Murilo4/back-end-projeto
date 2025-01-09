@@ -6,10 +6,10 @@ from .views.account.send_validation_code import email_validation
 from .views.account.send_validation_code import verify_email_code
 from .views.account.update_account import update_user
 from .views.account.delete_account import delete_user
-from .views.account.address.add_address import create_address
-from .views.account.address.get_address import get_one_address
-from .views.account.address.update_address import update_address
-from .views.account.address.delete_address import delete_address
+from .views.address.add_address import create_address
+from .views.address.get_address import get_one_address
+from .views.address.update_address import update_address
+from .views.address.delete_address import delete_address
 from .views.account.update_account import password_reset
 from .views.account.update_account import PasswordResetConfirm
 from .views.place.create_place import create_place
@@ -18,8 +18,10 @@ from .views.place.get_place import get_place
 from .views.place.update_place import update_place
 from .views.user_place.add_comment import create_comment
 from .views.user_place.update_comment import update_comment
+from .views.user_place.delete_comment import delete_comment
 from .views.user_place.add_rating import create_rating
 from .views.user_place.update_rating import update_rating
+from .views.user_place.delete_rating import delete_rating
 from .views.user_place.add_favorite import set_favorite
 # from .views.account.send_sms import send_sms_msg
 
@@ -65,8 +67,10 @@ urlpatterns = [
     # user place
     path('create-comment/', create_comment, name='create_comment'),
     path('update-comment/', update_comment, name='update_comment'),
+    path('delete-comment/', delete_comment, name='delete_comment'),
     path('create-rating/', create_rating, name='create_rating'),
     path('update-rating/', update_rating, name='update_rating'),
+    path('delete-rating/', delete_rating, name='delete_rating'),
     path('set-favorite/', set_favorite, name='set_favorite'),
 
     # path('send-sms/', send_sms_msg, name='send_sms_msg'),
