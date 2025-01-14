@@ -1,19 +1,25 @@
-from rest_framework.decorators import api_view, throttle_classes
+import logging
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import NormalUser
 from ...serializers.session import CreateSession
+from datetime import datetime, timedelta, timezone
 import re
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+import jwt
+from django.conf import settings
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 from ...jwt.generate_jwt import generate_jwt_session, generate_jwt
 from django.db import transaction
 import bcrypt
 
+logger = logging.getLogger(__name__)
+
 
 @api_view(['POST'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def login_user_with_cpf(request):
     if request.method != 'POST':
         return JsonResponse({
@@ -70,6 +76,14 @@ def login_user_with_cpf(request):
         }, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
+        user_validaded = user.is_validated
+        if user_validaded == 0:
+            token = generate_jwt_(user.email)
+            return JsonResponse({
+                "success": False,
+                "message": "Usuário não validado. Valide seu email.",
+                "token": token
+            }, status=status.HTTP_406_NOT_ACCEPTABLE)
         with transaction.atomic():
             refresh = generate_jwt_session(user)
             access = generate_jwt(user)
@@ -90,6 +104,7 @@ def login_user_with_cpf(request):
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
+        logger.error("Internal server error during login", exc_info=True)
         return JsonResponse({
             "success": False,
             "message":
@@ -103,3 +118,12 @@ def validate_password(password, user_password):
         return True
     else:
         return False
+
+
+def generate_jwt_(email):
+    payload = {
+        'email': email,
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token

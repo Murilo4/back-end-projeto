@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-k_dpv$1vab-!ykx#%=#=5(x=kobtk^f02y2z6v=fzeq(&l9#fe
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'comtur',
@@ -32,20 +32,27 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-        'rest_framework.throttling.ScopedRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '2/minute',  # Limite para usuários anônimos
-        'minute': '5/minute',
-        'user': '5/minute',  # Limite para usuários autenticados
-        'daily': '100/day',   # Limite diário
-        'hourly': '50/hour',  # Limite horário
-    }
-}
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Exemplo para React em desenvolvimento
+    "http://localhost:8000",
+    "http://localhost:8001",
+]
+
+
+# REST_FRAMEWORK = {
+#     'DEFAULT_THROTTLE_CLASSES': [
+#         'rest_framework.throttling.AnonRateThrottle',
+#         'rest_framework.throttling.UserRateThrottle',
+#         'rest_framework.throttling.ScopedRateThrottle',
+#     ],
+#     'DEFAULT_THROTTLE_RATES': {
+#         'anon': '2/minute',  # Limite para usuários anônimos
+#         'minute': '5/minute',
+#         'user': '5/minute',  # Limite para usuários autenticados
+#         'daily': '100/day',   # Limite diário
+#         'hourly': '50/hour',  # Limite horário
+#     }
+# }
 
 CORS_ALLOW_HEADERS = [
     'jwt_token',
@@ -62,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

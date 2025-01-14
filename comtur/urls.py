@@ -23,6 +23,8 @@ from .views.user_place.add_rating import create_rating
 from .views.user_place.update_rating import update_rating
 from .views.user_place.delete_rating import delete_rating
 from .views.user_place.add_favorite import set_favorite
+from .views.account.user_creation import validate_jwt
+from .views.account.user_creation import generate_new_token
 # from .views.account.send_sms import send_sms_msg
 
 
@@ -42,6 +44,10 @@ urlpatterns = [
          update_user, name="update-user"),
     path("delete-user/",
          delete_user, name="delete_user"),
+    path("validate-token/",
+         validate_jwt, name="validate_jwt"),
+    path("generate-new-token/",
+         generate_new_token, name="generate_new_token"),
     # Address
     path("create-address/",
          create_address, name="create_address"),

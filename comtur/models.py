@@ -22,6 +22,7 @@ class NormalUser(models.Model):
     password = models.CharField(max_length=255)
     photo = models.CharField(max_length=255, null=True)
     is_validated = models.BooleanField(default=0)
+    last_pass_change = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 

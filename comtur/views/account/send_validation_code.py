@@ -1,20 +1,21 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 import re
+from ...models import NormalUser
 from ...serializers.NormalUser import UpdateValidationNormalUser
 from django.core.mail import send_mail
 from django.core.cache import cache
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 import random
 import os
 email = os.getenv('EMAIL')
 
 
 @api_view(['POST'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def email_validation(request):
     if request.method != 'POST':
         return JsonResponse({'success': False,
@@ -22,7 +23,21 @@ def email_validation(request):
                             status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        email = request.data.get('email')
+        email = request.data.get('email', None)
+        cpf = request.data.get("cpf", None)
+        cnpj = request.data.get("cnpj", None)
+        print(email, cpf, cnpj)
+        if not email:
+            if not cpf and not cnpj:
+                return JsonResponse({'success': False,
+                                    'message': 'Email é obrigatório'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            if cpf:
+                user = NormalUser.objects.get(cpf=cpf)
+                email = user.email
+            elif cnpj:
+                user = NormalUser.objects.get(cnpj=cnpj)
+                email = user.email
 
         r = re.compile(r'^[\w.-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$')
         if not r.match(email):
@@ -59,7 +74,20 @@ def verify_email_code(request):
                             'message': 'Invalid request method'},
                             status=status.HTTP_400_BAD_REQUEST)
     try:
-        email = request.data.get('email')
+        email = request.data.get('email', None)
+        cpf = request.data.get("cpf", None)
+        cnpj = request.data.get("cnpj", None)
+        if not email:
+            if not cpf and not cnpj:
+                return JsonResponse({'success': False,
+                                    'message': 'Email é obrigatório'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            if cpf:
+                user = NormalUser.objects.get(cpf=cpf)
+                email = user.email
+            elif cnpj:
+                user = NormalUser.objects.get(cnpj=cnpj)
+                email = user.email
         code = request.data.get('code')
 
         if not email or not code:
@@ -74,10 +102,13 @@ def verify_email_code(request):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         if stored_code == code:
+            user = NormalUser.objects.get(email=email)
             cache.delete(f'validation_code_{email}')
-            user = UpdateValidationNormalUser(data={'is_validated': 1})
-            if user:
-                user.save()
+            user_updated = UpdateValidationNormalUser(user,
+                                                      data={'is_validated': 1},
+                                                      partial=True)
+            if user_updated.is_valid(raise_exception=True):
+                user_updated.save()
                 return JsonResponse({'success': True,
                                     'message': 'Código validado com sucesso'},
                                     status=status.HTTP_200_OK)

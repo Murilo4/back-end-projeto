@@ -40,7 +40,7 @@ class UpdateNormalUser(serializers.ModelSerializer):
 class UpdateValidationNormalUser(serializers.ModelSerializer):
     class Meta:
         model = NormalUser
-        fields = 'is_validated'
+        fields = ['is_validated']
 
     def update(self, instance, validated_data):
         instance.is_validated = validated_data.get(

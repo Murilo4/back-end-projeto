@@ -6,18 +6,20 @@ from ...serializers.Names import CreateNames, CreateUserName
 from ...serializers.NormalUser import CreateNormalUser
 import re
 from django.db import transaction
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import bcrypt
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
+import jwt
+from django.conf import settings
 
 
 @api_view(['POST'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def create_user(request):
     if request.method != 'POST':
-        return JsonResponse({"sucess": False,
+        return JsonResponse({"success": False,
                              "message": "Invalid request method"},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -42,45 +44,45 @@ def create_user(request):
     cnpj = request.data.get("cnpj") if request.data.get("cnpj") else None
 
     if not userName:
-        return JsonResponse({"sucess": False,
+        return JsonResponse({"success": False,
                              "message": "User name is required"},
                             status=status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
         if cpf is not None:
             validate = validate_cpf(cpf)
             if validate is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "CPF invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
             validate_user = validate_username(userName)
             if validate_user is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Nome invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validate_phone = validate_phoneNumber(phone)
 
             if validate_phone is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Número de telefone invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validate_email = validate_useremail(email)
 
             if validate_email is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Email invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validete_pass = validate_password(password)
             if validete_pass is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Senha invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             cripted_password = cript_password(password)
             if cripted_password is None:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Erro ao criptografar a senha"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
@@ -104,6 +106,7 @@ def create_user(request):
                       'password': cripted_password,
                       'cpf': numeros_cpf,
                       'photo': request.data.get('photo', None),
+                      'last_pass_change': datetime.now(),
                       })
 
             if user_create.is_valid(raise_exception=True):
@@ -113,8 +116,8 @@ def create_user(request):
                 order = 1
                 for referencia in referencias:
                     serializer_user = CreateUserName(
-                        data={'name': referencia,
-                              'user': user_id,
+                        data={'name_id': referencia,
+                              'user_id': user_id,
                               'create_order': order})
 
                     if serializer_user.is_valid(raise_exception=True):
@@ -126,8 +129,10 @@ def create_user(request):
                                              "Erro ao criar nome do usuario"},
                                             status=status.HTTP_400_BAD_REQUEST)
 
-                return JsonResponse({"sucess": True,
-                                    "message": "Usuario criado com sucesso"},
+                token = generate_jwt(get_user.email)
+                return JsonResponse({"success": True,
+                                     "message": "Usuario criado com sucesso",
+                                     "token": token},
                                     status=status.HTTP_201_CREATED)
             else:
                 return JsonResponse({
@@ -143,33 +148,33 @@ def create_user(request):
 
             validate_user = validate_username(userName)
             if validate_user is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Nome invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validate_phone = validate_phoneNumber(phone)
 
             if validate_phone is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Número de telefone invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validate_email = validate_useremail(email)
 
             if validate_email is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Email invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             validete_pass = validate_password(password)
             if validete_pass is False:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Senha invalido"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             cripted_password = cript_password(password)
             if cripted_password is None:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message": "Erro ao criptografar a senha"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
@@ -212,13 +217,15 @@ def create_user(request):
                         serializer_user.save()
                         order += 1
                     else:
-                        return JsonResponse({"sucess": False,
+                        return JsonResponse({"success": False,
                                             "message":
                                              "Erro ao criar nome do usuario"},
                                             status=status.HTTP_400_BAD_REQUEST)
 
-                return JsonResponse({"sucess": True,
-                                    "message": "Usuario criado com sucesso"},
+                token = generate_jwt(get_user.email)
+                return JsonResponse({"success": True,
+                                     "message": "Usuario criado com sucesso",
+                                     "token": token},
                                     status=status.HTTP_201_CREATED)
 
         else:
@@ -337,3 +344,50 @@ def cript_password(password):
 
     cripted_password = bcrypt.hashpw(encoded_password, bcrypt.gensalt())
     return cripted_password.decode('utf-8')
+
+
+def generate_jwt(email):
+    payload = {
+        'email': email,
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token
+
+
+@api_view(['POST'])
+def validate_jwt(request):
+    token = request.data.get('token')
+    if not token:
+        return JsonResponse({"success": False, "message":
+                             "Token is missing"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        email = payload.get('email')
+        return JsonResponse({"success": True,
+                             "email": email},
+                            status=status.HTTP_200_OK)
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({"success": False,
+                             "message": "Token has expired"},
+                            status=status.HTTP_400_BAD_REQUEST)
+    except jwt.InvalidTokenError:
+        return JsonResponse({"success": False,
+                             "message": "Invalid token"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def generate_new_token(request):
+    email = request.data.get('email')
+    if not email:
+        return JsonResponse({"success": False,
+                             "message": "Email is missing"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    token = generate_jwt(email)
+
+    return JsonResponse({"success": True,
+                         "token": token},
+                        status=status.HTTP_200_OK)
