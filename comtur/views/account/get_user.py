@@ -1,11 +1,11 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import NormalUser, UserName, Names, Subscription
 import jwt
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottle
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottle
 from cryptography.fernet import Fernet
 # from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
@@ -16,8 +16,8 @@ cipher_suite = Fernet(KEY)
 
 
 @api_view(['GET'])
-@throttle_classes([
-    MinuteRateThrottle, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottle, HourlyRateThrottle, DailyRateThrottle])
 def get_user_profile(request):
     if request.method != "GET":
         return JsonResponse({
@@ -55,7 +55,7 @@ def get_user_profile(request):
         if cpf:
             user = NormalUser.objects.get(cpf=cpf)
         elif cnpj:
-            user = NormalUser.objects.get(cpf=cpf)
+            user = NormalUser.objects.get(cnpj=cnpj)
         username_list = UserName.objects.filter(
             user_id=user.id).order_by('create_order')
 
@@ -77,14 +77,16 @@ def get_user_profile(request):
             'phone': user.phone,
             'photo': user.photo
         }
+        try:
+            plan = Subscription.objects.get(user=user_id)
 
-        plan = Subscription.objects.get(user=user_id)
-
-        plan_data = {
-            'dataTime': plan.subscription_data,
-            'imagesAllowed': plan.images_allowed,
-            'videosAllowed': plan.videos_allowed
-        }
+            plan_data = {
+                'dataTime': plan.subscription_data,
+                'imagesAllowed': plan.images_allowed,
+                'videosAllowed': plan.videos_allowed
+            }
+        except Subscription.DoesNotExist:
+            plan_data = {}
         # payload_user = {
         #     'username': full_name,
         #     'email': user.email,

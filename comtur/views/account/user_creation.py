@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Names, NormalUser
@@ -22,19 +22,6 @@ def create_user(request):
         return JsonResponse({"success": False,
                              "message": "Invalid request method"},
                             status=status.HTTP_400_BAD_REQUEST)
-
-    # token = request.data.get('token')
-    # if not token:
-    #     return JsonResponse({"success": False,
-    #                          "message": "Token is missing"},
-    #                         status=status.HTTP_400_BAD_REQUEST)
-    # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-    # userName = payload.get('username')
-    # email = payload.get('email')
-    # phone = payload.get('phone')
-    # password = payload.get('password')
-    # cpf = payload.get('cpf')
-    # cnpj = payload.get('cnpj')
 
     userName: str = request.data.get("username")
     email: str = request.data.get("email")
@@ -360,7 +347,7 @@ def validate_jwt(request):
     token = request.data.get('token')
     if not token:
         return JsonResponse({"success": False, "message":
-                             "Token is missing"}, 
+                             "Token is missing"},
                             status=status.HTTP_400_BAD_REQUEST)
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])

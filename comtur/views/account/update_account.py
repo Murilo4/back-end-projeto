@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Names, NormalUser, UserName, lastPasswords
@@ -7,8 +7,8 @@ from ...serializers.NormalUser import UpdateNormalUser, SaveOldPassword
 from ...serializers.NormalUser import UpdateaPassword
 import jwt
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.db import transaction
 from .user_creation import validate_cnpj, validate_cpf, validate_phoneNumber
@@ -24,8 +24,8 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-@throttle_classes([MinuteRateThrottleAnon,
-                   HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([MinuteRateThrottleAnon,
+#                    HourlyRateThrottle, DailyRateThrottle])
 def update_user(request):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
@@ -41,20 +41,9 @@ def update_user(request):
 
         token = auth_header.split(' ')[1]
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         user_id = payload.get('id')
-        token = request.data.get('token')
-        # token_data = request.data.get('token')
-        # if not token_data:
-        #     return JsonResponse({"success": False,
-        #                          "message": "Token is missing"},
-        #                         status=status.HTTP_400_BAD_REQUEST)
-        # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        # userName = payload.get('username')
-        # email = payload.get('email')
-        # phone = payload.get('phone')
-        # cpf = payload.get('cpf')
-        # cnpj = payload.get('cnpj')
+
         user = NormalUser.objects.get(id=user_id)
         phone = request.data.get('phone', None)
         cpf = request.data.get('cpf', None)
@@ -111,13 +100,14 @@ def update_user(request):
             update_name = request.data.get('username', '').lower().strip()
 
             if update_name != full_name_from_db:
-                db_names = full_name_from_db.split()
-                names_list = update_name.split()
+                db_name = full_name_from_db.split()
+                name_list = update_name.split()
 
-                df_name = [name for name in names_list if name not in db_names]
+                new_names = [name for name in name_list if name not in db_name]
+                rmvd_name = [name for name in db_name if name not in name_list]
 
                 referencias = []
-                for new_name in df_name:
+                for new_name in new_names:
                     try:
                         name_obj = Names.objects.get(name=new_name)
                         referencias.append(name_obj.id)
@@ -135,8 +125,8 @@ def update_user(request):
                             }, status=status.HTTP_400_BAD_REQUEST)
 
                 if referencias:
-                    UserName.objects.filter(user_id=user.id).delete()
-                    order = 1
+                    order = UserName.objects.filter(
+                        user_id=user.id).count() + 1
                     for referencia in referencias:
                         serializer_user = CreateUserName(
                             data={'name_id': referencia,
@@ -151,6 +141,16 @@ def update_user(request):
                                 'message': 'Erro ao criar nome do usuário',
                                 'error': serializer_user.errors
                             }, status=status.HTTP_400_BAD_REQUEST)
+
+                if rmvd_name:
+                    for name in rmvd_name:
+                        try:
+                            name_obj = Names.objects.get(name=name)
+                            UserName.objects.filter(user_id=user.id,
+                                                    name_id=name_obj.id
+                                                    ).delete()
+                        except Names.DoesNotExist:
+                            continue
 
         return JsonResponse({'success': True,
                             'message': 'Usuário atualizado com sucesso'},
@@ -169,8 +169,8 @@ def update_user(request):
 
 
 @api_view(['POST'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def password_reset(request):
     if request.method != 'POST':
         return JsonResponse({'success': False,
@@ -181,11 +181,12 @@ def password_reset(request):
         user = NormalUser.objects.get(email=email)
         token = account_activation_token.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_url = f"https://your-frontend-url/reset-password/{uid}/{token}/"
+        reset_url = f"http://127.0.0.1:3000/reset-password/{uid}/{token}/"
 
         send_mail(
             'Reset your password',
             f'Use the link to reset your password: {reset_url}',
+            user.email,
             [user.email],
             fail_silently=False,
         )

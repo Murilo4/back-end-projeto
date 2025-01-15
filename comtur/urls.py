@@ -1,6 +1,7 @@
 from django.urls import path
 from .views.account.user_creation import create_user
 from .views.account.login_user import login_user_with_cpf
+from .views.account.login_user import login_user_with_email
 from .views.account.get_user import get_user_profile
 from .views.account.send_validation_code import email_validation
 from .views.account.send_validation_code import verify_email_code
@@ -25,7 +26,7 @@ from .views.user_place.delete_rating import delete_rating
 from .views.user_place.add_favorite import set_favorite
 from .views.account.user_creation import validate_jwt
 from .views.account.user_creation import generate_new_token
-# from .views.account.send_sms import send_sms_msg
+from .views.account.send_sms import send_message
 
 
 urlpatterns = [
@@ -34,6 +35,8 @@ urlpatterns = [
          create_user, name="create_user"),
     path('login/',
          login_user_with_cpf, name="login_cpf"),
+    path('login-email/',
+         login_user_with_email, name="login_email"),
     path("user-profile/",
          get_user_profile, name="get-user-profile"),
     path("email-validation/",
@@ -80,4 +83,5 @@ urlpatterns = [
     path('set-favorite/', set_favorite, name='set_favorite'),
 
     # path('send-sms/', send_sms_msg, name='send_sms_msg'),
+    path("send-message/", send_message, name="send_message"),
 ]
