@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from ...models import Names, NormalUser, UserName, lastPasswords
 from ...serializers.Names import CreateNames, CreateUserName
@@ -23,6 +24,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
+@csrf_exempt
 @api_view(['PUT'])
 # @throttle_classes([MinuteRateThrottleAnon,
 #                    HourlyRateThrottle, DailyRateThrottle])
@@ -205,41 +207,72 @@ class TokenGenerator(PasswordResetTokenGenerator):
 account_activation_token = TokenGenerator()
 
 
+@csrf_exempt
 @api_view(['POST'])
-def PasswordResetConfirm(request, uidb64, token):
+def password_reset_confirm(request):
     try:
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+
+        if not uidb64 or not token:
+            return JsonResponse({"success": False,
+                                 "message": "UID ou Token ausentes."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         uid = urlsafe_base64_decode(uidb64).decode()
         user = NormalUser.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, NormalUser.DoesNotExist):
-        user = None
+        return JsonResponse({"success": False,
+                             "message": "Usuário não encontrado."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     if user is not None and account_activation_token.check_token(user, token):
-        new_password = request.data.get('password')
+        new_password = request.data.get('newPassword')
+        old_password = request.data.get('oldPassword')
+
+        if not old_password or not new_password:
+            return JsonResponse({"success": False,
+                                 "message": "Senhas não fornecidas."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        actual_password = validate_old_password(old_password, user.password)
+        if actual_password is False:
+            return JsonResponse({"success": False,
+                                 "message": "A senha antiga está incorreta."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         valid_password = validate_password(new_password)
         if valid_password:
             same_last_password, allow_to_chg = same_password(
-                new_password, user)
+                new_password, user.id)
             if same_last_password:
                 return JsonResponse({'success': False,
-                                    'message':
-                                     'Você não pode usar a mesma senha'},
+                                     'message': 'Você não pode usar a mesma senha.'},
                                     status=status.HTTP_406_NOT_ACCEPTABLE)
             if allow_to_chg:
                 password = cript_password(new_password)
-                serializer = SaveOldPassword(data={
-                                            'password_hash': user.password,
-                                            'user': user.id,
-                                            'changed_at': datetime.now()})
+                serializer = SaveOldPassword(data={'password_hash': user.password,
+                                                   'user': user.id})
                 if serializer.is_valid(raise_exception=True):
                     serializer.save()
 
-                new_pass = UpdateaPassword(data={'password': password})
+                new_pass = UpdateaPassword(user, data={'password': password},
+                                           partial=True)
                 if new_pass.is_valid(raise_exception=True):
                     new_pass.save()
-                return JsonResponse({"message": "Password has been reset!"},
+                return JsonResponse({"success": True,
+                                     "message": "A senha foi redefinida!"},
                                     status=status.HTTP_200_OK)
     else:
-        return JsonResponse({"message": "Invalid token"},
+        return JsonResponse({"message": "Token inválido"},
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+def validate_old_password(old_password, user_password_hash):
+    if old_password is None:
+        return False
+    return bcrypt.checkpw(
+        old_password.encode('utf-8'), user_password_hash.encode('utf-8'))
 
 
 def validate_password(password):
@@ -268,14 +301,14 @@ def cript_password(password):
 def same_password(password, user):
     same_pass = False
     allow_to_change = True
-    has_last_passwords = lastPasswords.objects.filter(user=user.id).exists()
+    has_last_passwords = lastPasswords.objects.filter(user=user).exists()
     if has_last_passwords:
-        last_password = lastPasswords.objects.filter(user=user.id)
+        last_password = lastPasswords.objects.filter(user=user)
         for senha_antiga in last_password:
             if bcrypt.checkpw(
                 password.encode('utf-8'),
                 senha_antiga.password_hash.encode(
-                                            'utf-8')):
+                    'utf-8')):
                 same_pass = True
                 allow_to_change = False
                 return same_pass, allow_to_change

@@ -12,7 +12,7 @@ from .views.address.get_address import get_one_address
 from .views.address.update_address import update_address
 from .views.address.delete_address import delete_address
 from .views.account.update_account import password_reset
-from .views.account.update_account import PasswordResetConfirm
+from .views.account.update_account import password_reset_confirm
 from .views.place.create_place import create_place
 from .views.place.delete_place import delete_place
 from .views.place.get_place import get_place
@@ -63,8 +63,8 @@ urlpatterns = [
     # Password Reset
     path('request-reset/',
          password_reset, name='request-reset'),
-    path('reset/<uidb64>/<token>/',
-         PasswordResetConfirm, name='password-reset-confirm'),
+    path('reset/',
+         password_reset_confirm, name='password-reset-confirm'),
     path('create-place/',
          create_place, name="create_place"),
     path('delete-place/', delete_place, name="delete_place"),

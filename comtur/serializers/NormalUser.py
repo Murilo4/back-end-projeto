@@ -54,7 +54,7 @@ class UpdateValidationNormalUser(serializers.ModelSerializer):
 class SaveOldPassword(serializers.ModelSerializer):
     class Meta:
         model = lastPasswords
-        fields = 'password_hash', 'user', 'changed_at'
+        fields = ['password_hash', 'user']
 
     def create(self, validated_data):
         last_password = lastPasswords(**validated_data)
@@ -65,11 +65,11 @@ class SaveOldPassword(serializers.ModelSerializer):
 class UpdateaPassword(serializers.ModelSerializer):
     class Meta:
         model = NormalUser
-        fields = 'passoword'
+        fields = ['password']
 
     def update(self, instance, validated_data):
-        instance.passoword = validated_data.get(
-            'passoword', instance.passoword)
+        instance.password = validated_data.get(
+            'password', instance.password)
 
         instance.save()
 

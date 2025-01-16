@@ -33,9 +33,13 @@ class NormalUser(models.Model):
 
 class lastPasswords(models.Model):
     id = models.IntegerField(primary_key=True)
-    user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    user = models.IntegerField()
     password_hash = models.CharField(max_length=255)
-    changed_at = models.TimeField()
+    changed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'lastPasswords'
 
 
 class Places(models.Model):
