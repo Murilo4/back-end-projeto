@@ -87,31 +87,7 @@ def get_user_profile(request):
             }
         except Subscription.DoesNotExist:
             plan_data = {}
-        # payload_user = {
-        #     'username': full_name,
-        #     'email': user.email,
-        #     'cpf': user.cpf,
-        #     'cnpj': user.cnpj,
-        #     'phone': user.phone,
-        #     'photo': user.photo,
-        #     'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
-        # }
-        # token = jwt.encode(payload_user, SECRET_KEY, algorithm='HS256')
-        # payload_subscription = {
-        #     'dataTime': plan.subscription_data,
-        #     'imagesAllowed': plan.images_allowed,
-        #     'videosAllowed': plan.videos_allowed,
-        #     'exp': datetime.now(timezone.utc) + timedelta(minutes=10)
-        # }
-        # token_sub = jwt.encode(payload_subscription,
-        # SECRET_KEY, algorithm='HS256')
 
-        # return JsonResponse({
-        #     "success": True,
-        #     "message": "Dados do usuário recuperados com sucesso.",
-        #     "userData": token,
-        #     "subscriptionData": token_sub
-        # }, status=status.HTTP_200_OK)
         return JsonResponse({
             "success": True,
             "message": "Dados do usuário recuperados com sucesso.",

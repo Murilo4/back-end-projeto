@@ -9,10 +9,13 @@ from .views.account.update_account import update_user
 from .views.account.delete_account import delete_user
 from .views.address.add_address import create_address
 from .views.address.get_address import get_one_address
+from .views.address.get_all_address import get_all_address
 from .views.address.update_address import update_address
 from .views.address.delete_address import delete_address
 from .views.account.update_account import password_reset
 from .views.account.update_account import password_reset_confirm
+from .views.account.update_account import password_forgot_change
+from .views.account.update_account import forgot_password
 from .views.place.create_place import create_place
 from .views.place.delete_place import delete_place
 from .views.place.get_place import get_place
@@ -65,11 +68,18 @@ urlpatterns = [
          password_reset, name='request-reset'),
     path('reset/',
          password_reset_confirm, name='password-reset-confirm'),
+    path('forgot-password/',
+         forgot_password, name='forgot-password'),
+    path('forgot-password-change/',
+         password_forgot_change, name='forgot-password-change'),
+    # Place
     path('create-place/',
          create_place, name="create_place"),
     path('delete-place/', delete_place, name="delete_place"),
     path('get-place/',
          get_place, name="get_place"),
+    path("get-all-address/",
+         get_all_address, name="get_all_address"),
     path('update-place/',
          update_place, name="update_place"),
     path('delete-place/', delete_place, name="delete_place"),

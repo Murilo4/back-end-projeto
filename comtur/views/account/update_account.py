@@ -19,9 +19,13 @@ from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from dotenv import load_dotenv
 import bcrypt
-from datetime import datetime
+import random
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+
+
+def random_number():
+    return str(random.randint(100000, 999999))
 
 
 @csrf_exempt
@@ -199,6 +203,36 @@ def password_reset(request):
                             status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(['POST'])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+def forgot_password(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False,
+                             'message': 'Método não permitido'},
+                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    try:
+        email = request.data.get('email')
+        user = NormalUser.objects.get(email=email)
+        number_random = random_number()
+        token = account_activation_token.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_url = f"http://127.0.0.1:3000/forgot-password/{uid}/{token}/{number_random}"
+
+        send_mail(
+            'Reset your password',
+            f'Use the link to reset your password: {reset_url}',
+            user.email,
+            [user.email],
+            fail_silently=False,
+        )
+        return JsonResponse({"message": "Password reset link sent!"},
+                            status=status.HTTP_200_OK)
+    except NormalUser.DoesNotExist:
+        return JsonResponse({"message": "User not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+
 class TokenGenerator(PasswordResetTokenGenerator):
     def _make_hash_value(self, user, timestamp):
         return f"{user.pk}{timestamp}{user.password}"
@@ -247,12 +281,65 @@ def password_reset_confirm(request):
                 new_password, user.id)
             if same_last_password:
                 return JsonResponse({'success': False,
-                                     'message': 'Você não pode usar a mesma senha.'},
+                                     'message':
+                                    'Você não pode usar a mesma senha.'},
                                     status=status.HTTP_406_NOT_ACCEPTABLE)
             if allow_to_chg:
                 password = cript_password(new_password)
-                serializer = SaveOldPassword(data={'password_hash': user.password,
-                                                   'user': user.id})
+                serializer = SaveOldPassword(data={
+                    'password_hash': user.password,
+                    'user': user.id})
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+
+                new_pass = UpdateaPassword(user, data={'password': password},
+                                           partial=True)
+                if new_pass.is_valid(raise_exception=True):
+                    new_pass.save()
+                return JsonResponse({"success": True,
+                                     "message": "A senha foi redefinida!"},
+                                    status=status.HTTP_200_OK)
+    else:
+        return JsonResponse({"message": "Token inválido"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def password_forgot_change(request):
+    try:
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+
+        if not uidb64 or not token:
+            return JsonResponse({"success": False,
+                                 "message": "UID ou Token ausentes."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = NormalUser.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, NormalUser.DoesNotExist):
+        return JsonResponse({"success": False,
+                             "message": "Usuário não encontrado."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    if user is not None and account_activation_token.check_token(user, token):
+        new_password = request.data.get('newPassword')
+
+        valid_password = validate_password(new_password)
+        if valid_password:
+            same_last_password, allow_to_chg = same_password(
+                new_password, user.id)
+            if same_last_password:
+                return JsonResponse({'success': False,
+                                     'message':
+                                    'Você não pode usar a mesma senha.'},
+                                    status=status.HTTP_406_NOT_ACCEPTABLE)
+            if allow_to_chg:
+                password = cript_password(new_password)
+                serializer = SaveOldPassword(data={
+                    'password_hash': user.password,
+                    'user': user.id})
                 if serializer.is_valid(raise_exception=True):
                     serializer.save()
 
