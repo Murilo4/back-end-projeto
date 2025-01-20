@@ -208,6 +208,8 @@ def create_user(request):
                                             "message":
                                              "Erro ao criar nome do usuario"},
                                             status=status.HTTP_400_BAD_REQUEST)
+                    
+                
 
                 token = generate_jwt(get_user.email)
                 return JsonResponse({"success": True,

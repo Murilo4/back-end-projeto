@@ -1,12 +1,12 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Address, addressStreet, neighborhoodAddress
-from ...models import UserName
+from ...models import UserName, Street, Neighborhood, Names
 import jwt
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottle
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottle
 from django.db import transaction
 from dotenv import load_dotenv
 load_dotenv()
@@ -14,23 +14,21 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['DELETE'])
-@throttle_classes([MinuteRateThrottle, HourlyRateThrottle, DailyRateThrottle])
-def delete_address(request):
+def delete_address(request, token):
     if request.method != 'DELETE':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
                             status=status.HTTP_400_BAD_REQUEST)
-    try:
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return JsonResponse({
-                "success": False,
-                "message": "Token de acesso não fornecido ou formato inválido."
-            }, status=status.HTTP_401_UNAUTHORIZED)
 
-        address = request.data.get('addressId')
+    try:
+        # Decodifica o token JWT para obter o address_id
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"],
+                                   options={"verify_signature": False})
+        address_id = decoded_token.get('address_id')
+
+        # Busca o endereço para exclusão
         try:
-            address_to_delete = Address.objects.get(id=address)
+            address_to_delete = Address.objects.get(id=address_id)
         except Address.DoesNotExist:
             return JsonResponse({
                 'success': False,
@@ -39,47 +37,53 @@ def delete_address(request):
 
         with transaction.atomic():
             try:
-                address_name = addressStreet.objects.filter(address=address)
-                for old_name in address_name:
-                    name = old_name.street
+                address_names = addressStreet.objects.filter(
+                    address=address_to_delete)
+                for old_name in address_names:
                     if addressStreet.objects.filter(
-                                                    street=name).count() == 1:
-                        old_name.delete()
-                        name.delete()
+                            street=old_name.street).count() == 1:
+                        addressStreet.objects.get(
+                                street=old_name.id).delete()
+                        Street.objects.get(id=old_name.id).delete()
                     else:
-                        old_name.delete()
+                        addressStreet.objects.get(
+                            street=old_name.id).delete()
 
-                # Handle deletion for neighborhoodAddress
                 neighborhood_addresses = neighborhoodAddress.objects.filter(
-                    address=address)
+                    address=address_to_delete)
                 for old_neigh in neighborhood_addresses:
                     neighbor = old_neigh.neighborhood
                     if neighborhoodAddress.objects.filter(
-                                                         neighborhood=neighbor
-                                                         ).count() == 1:
-                        old_neigh.delete()
-                        neighbor.delete()
+                        neighborhood=neighbor
+                         ).count() == 1:
+                        neighborhoodAddress.objects.get(
+                            street=old_neigh.id).delete()
+                        Neighborhood.objects.get(id=old_neigh.id).delete()
                     else:
-                        old_neigh.delete()
+                        neighborhoodAddress.objects.get(
+                            street=old_neigh.id).delete()
 
-                address_name = UserName.objects.filter(address=address)
-                for old_name in address_name:
+                # Excluindo as associações de UserName
+                address_names = UserName.objects.filter(
+                    address=address_to_delete)
+                for old_name in address_names:
                     name = old_name.name_id
-                    if UserName.objects.filter(
-                                                name_id=name).count() == 1:
-                        old_name.delete()
-                        name.delete()
+                    if UserName.objects.filter(name_id=name).count() == 1:
+                        UserName.objects.get(name=old_name.id).delete()
+                        Names.objects.get(id=old_name.id).delete()
                     else:
-                        old_name.delete()
-                if address_to_delete:
-                    address_to_delete.delete()
+                        UserName.objects.get(name=old_name.id).delete()
 
             except (addressStreet.DoesNotExist,
-                    neighborhoodAddress.DoesNotExist):
+                    neighborhoodAddress.DoesNotExist,
+                    UserName.DoesNotExist):
                 pass
+                
+            address_to_delete.delete()
         return JsonResponse({'success': True,
                              'message': 'Endereço deletado com sucesso!'},
                             status=status.HTTP_200_OK)
+
     except jwt.ExpiredSignatureError:
         return JsonResponse({'success': False,
                              'message': 'Token expirado.'},
@@ -89,6 +93,7 @@ def delete_address(request):
         return JsonResponse({'success': False,
                              'message': 'Token inválido.'},
                             status=status.HTTP_401_UNAUTHORIZED)
+
     except Exception as e:
         return JsonResponse({
             'success': False,

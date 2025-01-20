@@ -57,11 +57,11 @@ urlpatterns = [
     # Address
     path("create-address/",
          create_address, name="create_address"),
-    path("get-address/",
+    path("get-address/<token>/",
          get_one_address, name="get_one_address"),
-    path("update-address/",
+    path("update-address/<token>/",
          update_address, name="update_address"),
-    path("delete-address/",
+    path("delete-address/<token>/",
          delete_address, name="delete_address"),
     # Password Reset
     path('request-reset/',

@@ -1,21 +1,23 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Address, neighborhoodAddress, City, HouseNumber, State
 from ...models import addressStreet, Neighborhood, Street, UserName, Names
 import jwt
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+from django.views.decorators.csrf import csrf_exempt
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
+@csrf_exempt
 @api_view(['GET'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
-def get_one_address(request):
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+def get_one_address(request, token):
     if request.method != 'GET':
         return JsonResponse({'success': False,
                             'message': 'Invalid request method'},
@@ -28,12 +30,14 @@ def get_one_address(request):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        token = auth_header.split(' ')[1]
+        token_user = auth_header.split(' ')[1]
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token_user, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get('id')
-        # address_id = request.HEADERS.get('addressId')
-        address_id = request.data.get('addressId')
+
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"],
+                                   options={"verify_signature": False})
+        address_id = decoded_token.get('address_id')
         try:
             address = Address.objects.get(id=address_id, user_address=user_id)
         except Address.DoesNotExist:
@@ -102,14 +106,14 @@ def get_one_address(request):
                                  'Não foi possivel retornar o endereço'},
                                 status=status.HTTP_404_NOT_FOUND)
         address_data = {
-            'type': address.address_type,
-            'name': full_name_address,
+            'addressType': address.address_type,
+            'addressName': full_name_address,
             "street": full_street_formated,
             "state": state.state,
             "number": number.number,
             "neighborhood": full_neighbor_formated,
             "city": city.city,
-            "postal": address.postal,
+            "cep": address.postal,
         }
         return JsonResponse({"success": True,
                              "message": "Endereço retornado com sucesso",

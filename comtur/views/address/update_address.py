@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from django.db import transaction
@@ -11,8 +11,8 @@ from ...serializers.address import CreateState, CreateNeighborAddress
 from ...serializers.address import UpdateAddressState, createCity
 from ...serializers.address import CreateStreetAddress, UpdateAddressNumber
 from ...serializers.address import UpdateAddressCity
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 import jwt
 import os
 
@@ -22,9 +22,9 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
-def update_address(request):
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+def update_address(request, token):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
@@ -37,11 +37,14 @@ def update_address(request):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        token = auth_header.split(' ')[1]
+        token_user = auth_header.split(' ')[1]
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token_user, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get('id')
-        address_id = request.data.get('addressId')
+
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"],
+                                   options={"verify_signature": False})
+        address_id = decoded_token.get('address_id')
 
         state = request.data.get('state')
         neighborhood = request.data.get('neighborhood')
@@ -57,7 +60,7 @@ def update_address(request):
                                 status=status.HTTP_404_NOT_FOUND)
 
         up_address = {
-            'postal': request.data.get('postal'),
+            'postal': request.data.get('cep'),
             'address_type': request.data.get('addressType')
         }
         with transaction.atomic():
@@ -151,8 +154,9 @@ def update_numbers(numbers, address_id):
     except HouseNumber.DoesNotExist:
         serializer = CreateHouseNumber(data={"number": numbers})
         if serializer.is_valid():
-            new_name_obj = serializer.save()
-            referencia = new_name_obj.id
+            serializer.save()
+            new_number = HouseNumber.objects.get(number=numbers)
+            referencia = new_number.id
         else:
             is_updated = False
 
@@ -166,20 +170,17 @@ def update_city(city, address_id):
         city_obj = City.objects.get(city=city)
         city_exists = Address.objects.filter(city=city_obj.id,
                                              id=address_id).exists()
-        print("buscou")
         if city_exists:
             is_updated = False
             return is_updated, referencia
         else:
-            print("chegou antes de salvar a referencia")
             referencia = city_obj.id
-            print("salvou a cidade")
     except City.DoesNotExist:
-        print("chegou cidade")
         serializer = createCity(data={"city": city})
         if serializer.is_valid(raise_exception=True):
-            new_name_obj = serializer.save()
-            referencia = new_name_obj.id
+            serializer.save()
+            new_city = City.objects.get(city=city)
+            referencia = new_city.id
         else:
             is_updated = False
 
@@ -198,13 +199,12 @@ def update_state(state, address_id):
             return is_updated, referencias
         else:
             referencias = state_obj.id
-            print("salvou o estado")
-    except (State.DoesNotExist, Address.DoesNotExist):
-        print("chegou no state")
+    except State.DoesNotExist:
         serializer = CreateState(data={"state": state})
         if serializer.is_valid(raise_exception=True):
-            new_state_obj = serializer.save()
-            referencias = new_state_obj.id
+            serializer.save()
+            new_state = State.objects.get(state=state)
+            referencias = new_state.id
         else:
             is_updated = False
     return is_updated, referencias
@@ -213,7 +213,6 @@ def update_state(state, address_id):
 def update_neighbor(neighbor, address_id):
     is_updated = True
     referencias = []
-    to_keep = []
     for n in neighbor:
         try:
             neigh = Neighborhood.objects.get(neighborhood=n)
@@ -221,12 +220,11 @@ def update_neighbor(neighbor, address_id):
                                                 neighborhood=neigh.id,
                                                 address=address_id).exists()
             if address_neigh:
-                to_keep.append(neigh.id)
+                referencias.append(neigh.id)
                 pass
             else:
                 referencias.append(neigh.id)
         except Neighborhood.DoesNotExist:
-            print(n)
             serializer = CreateNeighborhood(data={"neighborhood": n})
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
@@ -238,12 +236,9 @@ def update_neighbor(neighbor, address_id):
     if referencias:
         neighborhoodAddress.objects.filter(
             address=address_id
-        ).exclude(
-            neighborhood__in=to_keep
         ).delete()
         order = 1
         for ref in referencias:
-            print(ref)
             serializer_state = CreateNeighborAddress(
                 data={
                     'neighborhood': ref,
@@ -263,7 +258,6 @@ def update_neighbor(neighbor, address_id):
 def update_street(streets, address_id):
     is_updated = True
     referencias = []
-    to_keep = []
     for street in streets:
         try:
             street_db = Street.objects.get(street=street)
@@ -271,7 +265,7 @@ def update_street(streets, address_id):
                                                 street=street_db.id,
                                                 address=address_id).exists()
             if address_street:
-                to_keep.append(street_db.id)
+                referencias.append(street_db.id)
             else:
                 referencias.append(street_db.id)
         except (Street.DoesNotExist, addressStreet.DoesNotExist):
@@ -286,12 +280,9 @@ def update_street(streets, address_id):
     if referencias:
         addressStreet.objects.filter(
             address=address_id
-        ).exclude(
-            street__in=to_keep
         ).delete()
         order = 1
         for ref in referencias:
-            print(ref)
             serializer_state = CreateStreetAddress(
                 data={
                     'street': ref,

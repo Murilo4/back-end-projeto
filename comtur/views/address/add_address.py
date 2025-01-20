@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from ...serializers.address import CreateAddress, CreateHouseNumber
@@ -9,8 +9,8 @@ from ...serializers.Names import CreateNames, CreateUserNameAddress
 from django.db import transaction
 import jwt
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
+# from ...throttles import DailyRateThrottle, HourlyRateThrottle
+# from ...throttles import MinuteRateThrottleAnon
 from ...models import HouseNumber, Address, State, City, Street, Neighborhood
 from ...models import Names
 from dotenv import load_dotenv
@@ -19,8 +19,8 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['POST'])
-@throttle_classes([
-    MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
+# @throttle_classes([
+#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def create_address(request):
     if request.method != 'POST':
         return JsonResponse({'success': False,
@@ -75,7 +75,7 @@ def create_address(request):
                     "message": "Erro ao criar cidade",
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-            postal = request.data.get('postal')
+            postal = request.data.get('cep')
             try:
                 link_number = HouseNumber.objects.get(id=referencia_number)
                 get_state = State.objects.get(id=referencia_state)
@@ -133,12 +133,12 @@ def create_address(request):
                                         "message": "Erro ao criar rua"},
                                         status=status.HTTP_400_BAD_REQUEST)
 
-                return JsonResponse({"sucess": True,
+                return JsonResponse({"success": True,
                                     "message":
                                      "endereço criado com sucesso"},
                                     status=status.HTTP_201_CREATED)
             else:
-                return JsonResponse({"sucess": False,
+                return JsonResponse({"success": False,
                                     "message":
                                      "Não foi possivel criar o estado"},
                                     status=status.HTTP_400_BAD_REQUEST)

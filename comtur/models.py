@@ -142,24 +142,9 @@ class userSession(models.Model):
         db_table = 'UserSession'
 
 
-class Subscription(models.Model):
-    id = models.IntegerField(primary_key=True)
-    user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
-    user_type = models.CharField(max_length=10)
-    subscription_data = models.DateTimeField(auto_now=True)
-    images_allowed = models.IntegerField()
-    videos_allowed = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'subscription'
-
-
 class Plans(models.Model):
     id = models.IntegerField(primary_key=True)
-    description = models.CharField(max_length=255)
     price = models.IntegerField()
-    Subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     plan_type = models.CharField(max_length=255)
     plan_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now=True)
@@ -168,6 +153,20 @@ class Plans(models.Model):
     class Meta:
         managed = False
         db_table = 'Plans'
+
+
+class Subscription(models.Model):
+    id = models.IntegerField(primary_key=True)
+    user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    user_type = models.CharField(max_length=10)
+    plan = models.ForeignKey(Plans, on_delete=models.CASCADE)
+    subscription_data = models.DateTimeField(auto_now=True)
+    images_allowed = models.IntegerField()
+    videos_allowed = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'subscription'
 
 
 class PlansConfig(models.Model):

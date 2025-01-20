@@ -7,7 +7,7 @@ class CreateNormalUser(serializers.ModelSerializer):
     class Meta:
         model = NormalUser
         fields = ('email', 'password', 'cpf', 'phone', 'cnpj',
-                  'photo', 'last_pass_change')
+                  'photo', 'last_pass_change', 'user_type')
 
     def create(self, validated_data):
         user = NormalUser(**validated_data)
