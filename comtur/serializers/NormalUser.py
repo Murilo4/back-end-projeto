@@ -74,3 +74,17 @@ class UpdateaPassword(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class UpdatePhotoUser(serializers.ModelSerializer):
+    class Meta:
+        model = NormalUser
+        fields = ['photo']
+
+    def update(self, instance, validated_data):
+        instance.photo = validated_data.get(
+            'photo', instance.photo)
+
+        instance.save()
+
+        return instance

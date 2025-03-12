@@ -7,10 +7,12 @@ from .views.account.send_validation_code import email_validation
 from .views.account.send_validation_code import verify_email_code
 from .views.account.update_account import update_user
 from .views.account.delete_account import delete_user
+from .views.account.update_account import update_user_photo
 from .views.address.add_address import create_address
 from .views.address.get_address import get_one_address
 from .views.address.get_all_address import get_all_address
 from .views.address.update_address import update_address
+from .views.plans.get_all_plans import get_all_plans
 from .views.address.delete_address import delete_address
 from .views.account.update_account import password_reset
 from .views.account.update_account import password_reset_confirm
@@ -30,6 +32,7 @@ from .views.user_place.add_favorite import set_favorite
 from .views.account.user_creation import validate_jwt
 from .views.account.user_creation import generate_new_token
 from .views.account.send_sms import send_message
+from .views.search_new_places.search import search_suggestions
 
 
 urlpatterns = [
@@ -54,6 +57,8 @@ urlpatterns = [
          validate_jwt, name="validate_jwt"),
     path("generate-new-token/",
          generate_new_token, name="generate_new_token"),
+    path("update-user-photo/",
+         update_user_photo, name="update_user_photo"),
     # Address
     path("create-address/",
          create_address, name="create_address"),
@@ -94,4 +99,7 @@ urlpatterns = [
 
     # path('send-sms/', send_sms_msg, name='send_sms_msg'),
     path("send-message/", send_message, name="send_message"),
+    path("get-all-plans/",
+         get_all_plans, name="get_all_plans"),
+    path("search-suggestions/", search_suggestions, name="search_suggestions"),
 ]

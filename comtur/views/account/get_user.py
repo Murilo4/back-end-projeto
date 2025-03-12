@@ -1,13 +1,11 @@
-from rest_framework.decorators import api_view  # , throttle_classes
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import NormalUser, UserName, Names, Subscription
+from ...models import Plans
 import jwt
 import os
-# from ...throttles import DailyRateThrottle, HourlyRateThrottle
-# from ...throttles import MinuteRateThrottle
 from cryptography.fernet import Fernet
-# from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
@@ -16,8 +14,6 @@ cipher_suite = Fernet(KEY)
 
 
 @api_view(['GET'])
-# @throttle_classes([
-#     MinuteRateThrottle, HourlyRateThrottle, DailyRateThrottle])
 def get_user_profile(request):
     if request.method != "GET":
         return JsonResponse({
@@ -78,14 +74,13 @@ def get_user_profile(request):
             'photo': user.photo
         }
         try:
-            plan = Subscription.objects.get(user=user_id)
+            sub = Subscription.objects.get(user=user_id)
+            plan = Plans.objects.get(id=sub.plan_id)
 
             plan_data = {
-                'dataTime': plan.subscription_data,
-                'imagesAllowed': plan.images_allowed,
-                'videosAllowed': plan.videos_allowed
+                'PlanName': plan.plan_name,
             }
-        except Subscription.DoesNotExist:
+        except (Subscription.DoesNotExist, Plans.DoesNotExist):
             plan_data = {}
 
         return JsonResponse({

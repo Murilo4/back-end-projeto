@@ -42,8 +42,28 @@ class lastPasswords(models.Model):
         db_table = 'lastPasswords'
 
 
+class PlacesStates(models.Model):
+    id = models.IntegerField(primary_key=True)
+    state = models.CharField(max_length=255)
+
+    class Meta:
+        managed = False
+        db_table = 'PlacesStates'
+
+
+class PlacesCity(models.Model):
+    id = models.IntegerField(primary_key=True)
+    city = models.CharField(max_length=255)
+    placeState = models.ForeignKey(PlacesStates, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = 'PlacesCity'
+
+
 class Places(models.Model):
     id = models.IntegerField(primary_key=True)
+    city = models.ForeignKey(PlacesCity, on_delete=models.CASCADE)
     description = models.TextField()
     rating_number = models.IntegerField(null=True, blank=True)
     comments_number = models.IntegerField(null=True, blank=True)
@@ -147,6 +167,8 @@ class Plans(models.Model):
     price = models.IntegerField()
     plan_type = models.CharField(max_length=255)
     plan_name = models.CharField(max_length=255)
+    belonging_system = models.CharField(max_length=255)
+    description = models.TextField()
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -172,9 +194,10 @@ class Subscription(models.Model):
 class PlansConfig(models.Model):
     id = models.IntegerField(primary_key=True)
     plan = models.ForeignKey(Plans, on_delete=models.CASCADE)
-    images_allowed = models.IntegerField()
     videos_allowed = models.BooleanField()
     points_multiplier = models.IntegerField()
+    number_events = models.IntegerField()
+    image_on_questions = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
