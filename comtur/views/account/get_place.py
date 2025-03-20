@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, PlaceCategories, PlacesComments
-from ...models import Category, UserPlaces, UserName, Names, PlacesCity
+from ...models import Category, UserName, Names, PlacesCity
 from ...models import PlacesStates
 
 
@@ -43,21 +43,6 @@ def get_place(request, place_id):
             category_db = Category.objects.get(id=category.category)
             category_formated.append(category_db.category)
 
-        comments_formated = []
-        comments = PlacesComments.objects.filter(place_comment=place_id)
-        for comment in comments:
-            user_place = UserPlaces.objects.get(comments=comment.id)
-
-            # Obter o nome do usuário
-            user_name_record = UserName.objects.get(
-                user_id=user_place.user_place.id)  # Acesso ao ID do usuário
-            user_name = Names.objects.get(id=user_name_record.name_id)
-
-            comments_formated.append({
-                "username": user_name.name,  # Nome do usuário
-                "comment": comment.comment,
-                "rating": user_place.rating
-            })
         photos = PlacesPhotos.objects.filter(
             place_photo=place.id)
         photos_url = []
@@ -73,13 +58,11 @@ def get_place(request, place_id):
                 "workStart": place.work_start,
                 "workStop": place.work_stop,
                 "about": place.about,
-                "rating": place.rating_number if place.rating_number else 0,
                 "placeName": full_name,
                 "city": city.city,
                 "state": state.state,
                 "photos": photos_url,
                 "categories": category_formated,
-                "comments": comments_formated,
             }
     except (PlacesPhotos.DoesNotExist,
             PlacesComments.DoesNotExist,

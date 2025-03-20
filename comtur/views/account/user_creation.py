@@ -29,7 +29,6 @@ def create_user(request):
     password = request.data.get("password")
     cpf = request.data.get("cpf") if request.data.get("cpf") else None
     cnpj = request.data.get("cnpj") if request.data.get("cnpj") else None
-    print(cnpj)
     if not userName:
         return JsonResponse({"success": False,
                              "message": "User name is required"},

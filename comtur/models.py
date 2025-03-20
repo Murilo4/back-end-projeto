@@ -240,7 +240,8 @@ class addressStreet(models.Model):
 
 class PlacesPhotos(models.Model):
     id = models.IntegerField(primary_key=True)
-    img_url = models.TextField()
+    img_url = models.ImageField(upload_to='place_photos/',
+                                blank=True, null=True)
     description = models.CharField(max_length=255)
     place_photo = models.ForeignKey(Places, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)

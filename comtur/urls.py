@@ -20,11 +20,12 @@ from .views.account.update_account import password_forgot_change
 from .views.account.update_account import forgot_password
 from .views.place.create_place import create_place
 from .views.place.delete_place import delete_place
-from .views.place.get_place import get_place
+from .views.account.get_place import get_place
 from .views.place.update_place import update_place
 from .views.user_place.add_comment import create_comment
 from .views.user_place.update_comment import update_comment
 from .views.user_place.delete_comment import delete_comment
+from .views.place.get_user_place import get_place_user
 from .views.user_place.add_rating import create_rating
 from .views.user_place.update_rating import update_rating
 from .views.user_place.delete_rating import delete_rating
@@ -87,12 +88,14 @@ urlpatterns = [
     path('create-place/',
          create_place, name="create_place"),
     path('delete-place/', delete_place, name="delete_place"),
-    path('get-place/',
+    path('get-place/<int:place_id>/',
          get_place, name="get_place"),
     path("get-all-address/",
          get_all_address, name="get_all_address"),
     path('update-place/',
          update_place, name="update_place"),
+    path('get-user-places/',
+         get_place_user, name="get_place_user"),
     path('delete-place/', delete_place, name="delete_place"),
     # user place
     path('create-comment/', create_comment, name='create_comment'),

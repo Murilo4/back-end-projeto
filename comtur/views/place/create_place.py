@@ -1,23 +1,43 @@
-from rest_framework.decorators import api_view  # , throttle_classes
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import Category, NormalUser, Subscription
-# from ...models import Places
-from ...serializers.place import CreatePlace, CreateCategory, CreatePlaceCat
-from ...serializers.place import CreatePhotos
+from ...models import NormalUser, Subscription, Names, PlacesCity
+from ...models import PlacesStates, Places, Category
+from ...serializers.place import CreatePlace, CreatePlaceCat, CreateCategory
+from ...serializers.place import CreatePhotos, CreateCity, CreateState
+from ...serializers.Names import CreateNames, CreateUserNamePlace
 from django.db import transaction
-# from ...throttles import DailyRateThrottle, HourlyRateThrottle
-# from ...throttles import MinuteRateThrottleAnon
+import json
+import os
+import jwt
+from dotenv import load_dotenv
+load_dotenv()
+SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['POST'])
-# @throttle_classes([
-#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
 def create_place(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'},
                             status=status.HTTP_400_BAD_REQUEST)
-    enterprise = request.data.get('enterpriseId')
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({
+            "success": False,
+            "message": "Token de acesso não fornecido ou formato inválido."
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    token = auth_header.split(' ')[1]
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        cnpj = payload.get('id')
+    except Exception:
+        return JsonResponse({
+            "success": False,
+            "message": "Token JWT inválido ou expirado."
+        }, status=status.HTTP_401_UNAUTHORIZED)
+    enterprise = cnpj
     if not enterprise:
         return JsonResponse({"success": False,
                             "message": "Empresa não encontrada"},
@@ -29,11 +49,25 @@ def create_place(request):
                             "message": "A conta precisa ser empresarial"},
                             status=status.HTTP_401_UNAUTHORIZED)
 
-    description = request.data.get('description')
-    type = request.data.get('type')
-    work_start = request.data.get('workStart')
-    work_stop = request.data.get("workStop")
+    description = request.POST.get('description')
+    type = request.POST.get('type')
+    work_start = request.POST.get('workStart')
+    work_stop = request.POST.get("workStop")
+    placeName: str = request.POST.get("placeName")
+    city = request.POST.get("city")
+    state = request.POST.get("state")
+    placeName = placeName.strip()
+    photos = request.FILES.getlist('photos')
+    categories = request.POST.get('categories', '[]')
 
+    try:
+        categories = json.loads(categories)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False,
+                             'message': 'Formato inválido para categorias'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    name = [n.lower().strip() for n in placeName.split() if n.strip()]
     if not description and type:
         return JsonResponse({'success': False,
                             'message':
@@ -45,30 +79,51 @@ def create_place(request):
                              'horario de funcionamento não informado'},
                             status=status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
-        new_place = {
-                "description": description,
-                "type": type,
-                "locationX": request.data.get('locationX', ''),
-                "locationY": request.data.get('locationY', ''),
-                "work_start": work_start,
-                "work_stop": work_stop,
-                "enterprise": enterprise,
-                "about": request.data.get("about", '')
-                }
-        place_create = CreatePlace(data=new_place)
-        if place_create.is_valid(raise_exception=True):
-            place = place_create.save()
 
-        # is_categories_valid = False
-        categories = request.data.get("categories", [])
+        created_state, state_reference = create_state(state)
+        if created_state is False:
+            return JsonResponse({
+                "success": False,
+                "message": "Erro ao criar estado",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        created_city, city_reference = create_city(city, state_reference[0])
+        if created_city is False:
+            return JsonResponse({
+                "success": False,
+                "message": "Erro ao criar cidade",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        new_place = {
+            "description": description,
+            "type": type,
+            "locationX": request.POST.get('locationX', ''),
+            "locationY": request.POST.get('locationY', ''),
+            "work_start": work_start,
+            "work_stop": work_stop,
+            "enterprise": enterprise,
+            "city": city_reference[0],
+            "about": request.POST.get("about", '')
+        }
+
+        place_create = CreatePlace(data=new_place)
+        if not place_create.is_valid(raise_exception=True):
+            return JsonResponse({'success': False,
+                                'message':
+                                 'Erro ao criar local'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        place_create.save()
+        get_place = Places.objects.filter(enterprise=enterprise,
+                                          type=type).order_by('-id').first()
         is_categories_valid = get_or_create_category(
-            place.id, categories)
+            get_place.id, categories)
 
         if is_categories_valid is False:
             return JsonResponse({"success": False,
                                  "message":
                                 "Não foi possivel criar as categorias"},
                                 status=status.HTTP_400_BAD_REQUEST)
+
         number_images = 3
         try:
             user_sub = Subscription.objects.get(user=user)
@@ -76,7 +131,6 @@ def create_place(request):
         except Subscription.DoesNotExist:
             pass
 
-        photos: list = request.data.get('photos', [])
         qtt_photos = len(photos)
         if qtt_photos > number_images:
             return JsonResponse({'success': False,
@@ -85,14 +139,40 @@ def create_place(request):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         is_photos_valid = get_or_create_photos(
-            place.id, photos)
+            get_place.id, photos)
 
         if is_photos_valid is False:
             return JsonResponse({"success": False,
                                  "message":
                                 "Não foi possivel criar as fotos"},
                                 status=status.HTTP_400_BAD_REQUEST)
+        placeName = placeName.strip()
 
+        name = [n.lower().strip() for n in placeName.split() if n.strip()]
+
+        created_names, referencias = create_names(name)
+
+        if created_names is False:
+            return JsonResponse({
+                "success": False,
+                "message": "Erro ao criar nome",
+            }, status=status.HTTP_400_BAD_REQUEST)
+        order = 1
+        for referencia in referencias:
+            link_name = Names.objects.get(id=referencia)
+            serializer_user = CreateUserNamePlace(
+                data={'name_id': link_name.id,
+                      'places': get_place.id,
+                      'create_order': order})
+
+            if serializer_user.is_valid(raise_exception=True):
+                serializer_user.save()
+                order += 1
+            else:
+                return JsonResponse({"success": False,
+                                     "message":
+                                     "Erro ao criar nome do usuario"},
+                                    status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({"success": True,
                             "message": "Local criado com sucesso"},
                             status=status.HTTP_200_OK)
@@ -103,22 +183,27 @@ def get_or_create_category(place_create, categories):
     categories_ids = []
     for category in categories:
         try:
-            category_exists = Category.objects.get(category=category)
+            # Verificar se a categoria já existe
+            category_exists = Category.objects.get(
+                category=category['category'])
             categories_ids.append(category_exists.id)
         except Category.DoesNotExist:
+            # Criar nova categoria se não existir
             create_category = CreateCategory(
-                data={'category': category})
+                data={'category': category['category']})
             if create_category.is_valid():
                 create_category.save()
                 get_category = Category.objects.get(
-                    category=category)
+                    category=category['category'])
                 categories_ids.append(get_category.id)
             else:
                 category_valid = False
+
     for category_id in categories_ids:
         create_placeCat = CreatePlaceCat(data={
-                                        'category': category_id,
-                                        'place': place_create})
+            'category': category_id,
+            'place': place_create
+        })
         if create_placeCat.is_valid():
             create_placeCat.save()
         else:
@@ -129,14 +214,74 @@ def get_or_create_category(place_create, categories):
 def get_or_create_photos(place_create, photos):
     photos_valid = True
     for photo in photos:
-        photo_url = photo.get('url')
-        photo_desc = photo.get('description')
+        print("foto", photo)
         create_photo = CreatePhotos(
-            data={'img_url': photo_url,
+            data={'img_url': photo,
                   'place_photo': place_create,
-                  'description': photo_desc})
+                  'description': "Foto do local"})
         if create_photo.is_valid(raise_exception=True):
+            print("foto criada")
             create_photo.save()
         else:
             photos_valid = False
     return photos_valid
+
+
+def create_names(name):
+    referencias = []
+    created_names = True
+    for nome in name:
+        nome_lower = nome.lower().strip()
+        try:
+            obj = Names.objects.get(name=nome_lower)
+            referencias.append(obj.id)
+        except Names.DoesNotExist:
+            test_data = {"name": nome_lower}
+            serializer = CreateNames(data=test_data)
+            if serializer.is_valid():
+                obj = serializer.save()
+                new_name = Names.objects.get(name=obj.name)
+                referencias.append(new_name.id)
+            else:
+                created_names = False
+    return created_names, referencias
+
+
+def create_city(city, state_reference):
+    referencias = []
+    created_city = True
+    city_lower = city.lower()
+    try:
+        obj = PlacesCity.objects.get(city=city_lower,
+                                     placeState=state_reference)
+        referencias.append(obj.id)
+    except PlacesCity.DoesNotExist:
+        test_data = {"city": city_lower,
+                     "placeState": state_reference}
+        serializer = CreateCity(data=test_data)
+        if serializer.is_valid():
+            obj = serializer.save()
+            new_city = PlacesCity.objects.get(city=obj.city)
+            referencias.append(new_city.id)
+        else:
+            created_city = False
+    return created_city, referencias
+
+
+def create_state(state):
+    referencias = []
+    created_state = True
+    state_lower = state.lower()
+    try:
+        obj = PlacesStates.objects.get(state=state_lower)
+        referencias.append(obj.id)
+    except PlacesStates.DoesNotExist:
+        test_data = {"state": state_lower}
+        serializer = CreateState(data=test_data)
+        if serializer.is_valid():
+            obj = serializer.save()
+            new_state = PlacesStates.objects.get(state=obj.state)
+            referencias.append(new_state.id)
+        else:
+            created_state = False
+    return created_state, referencias

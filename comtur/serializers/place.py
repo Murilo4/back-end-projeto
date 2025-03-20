@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from ..models import Places, Category, PlaceCategories, PlacesPhotos
-from ..models import UserPlaces, PlacesComments, PlacesRating
+from ..models import UserPlaces, PlacesComments, PlacesRating, PlacesCity
+from ..models import PlacesStates
 
 
 class CreatePlace(serializers.ModelSerializer):
@@ -8,7 +9,7 @@ class CreatePlace(serializers.ModelSerializer):
         model = Places
         fields = ('description', 'type', 'locationX',
                   'locationY', 'work_start', 'work_stop',
-                  'enterprise', 'about')
+                  'enterprise', 'about', 'city')
 
     def create(self, validated_data):
         print("chegou ao serializer")
@@ -41,11 +42,11 @@ class CreatePlaceCat(serializers.ModelSerializer):
 
 class PlaceGetSerializer(serializers.ModelSerializer):
     workStart = serializers.CharField(source="work_start")
-    workStop = serializers.IntegerField(source="work_stop")
+    workStop = serializers.CharField(source="work_stop")
 
     class Meta:
         model = Places
-        fields = ('description', 'type', 'rating',
+        fields = ('description', 'type',
                   'locationX', 'rating_number',
                   'locationY', 'workStart', 'workStop',
                   'enterprise', 'about')
@@ -177,6 +178,41 @@ class UpdatePlaceRating(serializers.ModelSerializer):
     class Meta:
         model = PlacesRating
         fields = ['rating']
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class CreateCity(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesCity
+        fields = ['city', 'placeState']
+
+    def create(self, validated_data):
+        city = PlacesCity(**validated_data)
+        city.save()
+        return city
+
+
+class CreateState(serializers.ModelSerializer):
+    class Meta:
+        model = PlacesStates
+        fields = ['state']
+
+    def create(self, validated_data):
+        state = PlacesStates(**validated_data)
+        state.save()
+        return state
+
+
+class UpdatePlacesCityState(serializers.ModelSerializer):
+
+    class Meta:
+        model = Places
+        fields = ('city', 'state')
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
