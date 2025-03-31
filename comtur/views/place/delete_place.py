@@ -3,8 +3,6 @@ from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, PlaceCategories, PlacesComments
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
 from django.db import transaction
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,9 +10,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['DELETE'])
-@throttle_classes([MinuteRateThrottleAnon,
-                   HourlyRateThrottle, DailyRateThrottle])
-def delete_place(request):
+def delete_place(request, placeId):
     if request.method != 'DELETE':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
@@ -27,7 +23,7 @@ def delete_place(request):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        place_id = request.data.get('placeId')
+        place_id = placeId
 
         place = Places.objects.get(id=place_id)
 

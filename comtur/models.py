@@ -73,6 +73,8 @@ class Places(models.Model):
     locationY = models.TextField(null=True, blank=True)
     work_start = models.CharField(max_length=255)
     work_stop = models.CharField(max_length=255)
+    # lower_price = models.IntegerField()
+    # higher_price = models.IntegerField()
     about = models.TextField()
     enterprise = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
@@ -313,7 +315,7 @@ class Category(models.Model):
 class PlacesGroups(models.Model):
     id = models.IntegerField(primary_key=True)
     group_name = models.CharField(max_length=255)
-    main_place = models.ForeignKey(Places, on_delete=models.CASCADE)
+    # main_place = models.ForeignKey(Places, on_delete=models.CASCADE)
 
     class Meta:
         managed = False
@@ -322,8 +324,8 @@ class PlacesGroups(models.Model):
 
 class PlacesBranch(models.Model):
     id = models.IntegerField(primary_key=True)
-    branch = models.ForeignKey(Places, on_delete=models.CASCADE)
-    place_group = models.ForeignKey(PlacesGroups, on_delete=models.CASCADE)
+    # branch = models.ForeignKey(Places, on_delete=models.CASCADE)
+    # place_group = models.ForeignKey(PlacesGroups, on_delete=models.CASCADE)
 
     class Meta:
         managed = False

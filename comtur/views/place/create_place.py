@@ -6,8 +6,8 @@ from ...models import PlacesStates, Places, Category
 from ...serializers.place import CreatePlace, CreatePlaceCat, CreateCategory
 from ...serializers.place import CreatePhotos, CreateCity, CreateState
 from ...serializers.Names import CreateNames, CreateUserNamePlace
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import transaction
-import json
 import os
 import jwt
 from dotenv import load_dotenv
@@ -49,23 +49,17 @@ def create_place(request):
                             "message": "A conta precisa ser empresarial"},
                             status=status.HTTP_401_UNAUTHORIZED)
 
-    description = request.POST.get('description')
-    type = request.POST.get('type')
-    work_start = request.POST.get('workStart')
-    work_stop = request.POST.get("workStop")
-    placeName: str = request.POST.get("placeName")
-    city = request.POST.get("city")
-    state = request.POST.get("state")
+    description = request.data.get('description')
+    type = request.data.getlist('tipos[]')
+    work_start = request.data.get('workStart')
+    work_stop = request.data.get("workStop")
+    placeName: str = request.data.get("placeName")
+    city = request.data.get("city")
+    state = request.data.get("state")
     placeName = placeName.strip()
-    photos = request.FILES.getlist('photos')
-    categories = request.POST.get('categories', '[]')
-
-    try:
-        categories = json.loads(categories)
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False,
-                             'message': 'Formato inválido para categorias'},
-                            status=status.HTTP_400_BAD_REQUEST)
+    categories = request.data.getlist('categories[]')
+    # lower_price = request.data.get('lowerPrice')
+    # higher_price = request.data.get('higherPrice')
 
     name = [n.lower().strip() for n in placeName.split() if n.strip()]
     if not description and type:
@@ -77,6 +71,10 @@ def create_place(request):
         return JsonResponse({'success': False,
                             'message':
                              'horario de funcionamento não informado'},
+                            status=status.HTTP_400_BAD_REQUEST)
+    if not name:
+        return JsonResponse({"success": False,
+                             "message": "Nome não enviado"},
                             status=status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
 
@@ -93,19 +91,20 @@ def create_place(request):
                 "success": False,
                 "message": "Erro ao criar cidade",
             }, status=status.HTTP_400_BAD_REQUEST)
-
         new_place = {
             "description": description,
-            "type": type,
-            "locationX": request.POST.get('locationX', ''),
-            "locationY": request.POST.get('locationY', ''),
+            "type": type[0],
+            "locationX": request.data.get('locationX', ''),
+            "locationY": request.data.get('locationY', ''),
             "work_start": work_start,
             "work_stop": work_stop,
             "enterprise": enterprise,
             "city": city_reference[0],
-            "about": request.POST.get("about", '')
+            "about": request.data.get("about", ''),
+            # "lower_price": lower_price,
+            # "higher_price": higher_price
         }
-
+        print("chegou para a criação do local")
         place_create = CreatePlace(data=new_place)
         if not place_create.is_valid(raise_exception=True):
             return JsonResponse({'success': False,
@@ -113,8 +112,9 @@ def create_place(request):
                                  'Erro ao criar local'},
                                 status=status.HTTP_400_BAD_REQUEST)
         place_create.save()
-        get_place = Places.objects.filter(enterprise=enterprise,
-                                          type=type).order_by('-id').first()
+        get_place = Places.objects.filter(enterprise=enterprise, type=type[0]
+                                          ).order_by('-created_at').first()
+        print(get_place)
         is_categories_valid = get_or_create_category(
             get_place.id, categories)
 
@@ -130,14 +130,15 @@ def create_place(request):
             number_images = user_sub.number_images
         except Subscription.DoesNotExist:
             pass
-
-        qtt_photos = len(photos)
+        photos = request.FILES.getlist('photos')
+        print(photos)
+        qtt_photos = 2
+        print(qtt_photos, number_images)
         if qtt_photos > number_images:
             return JsonResponse({'success': False,
                                 'message':
                                  'Você excedeu o número de imagens'},
                                 status=status.HTTP_400_BAD_REQUEST)
-
         is_photos_valid = get_or_create_photos(
             get_place.id, photos)
 
@@ -174,28 +175,26 @@ def create_place(request):
                                      "Erro ao criar nome do usuario"},
                                     status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({"success": True,
-                            "message": "Local criado com sucesso"},
+                            "message": "Local criado com sucesso",
+                             "placeId": get_place.id},
                             status=status.HTTP_200_OK)
 
 
 def get_or_create_category(place_create, categories):
     category_valid = True
     categories_ids = []
+
     for category in categories:
         try:
             # Verificar se a categoria já existe
-            category_exists = Category.objects.get(
-                category=category['category'])
+            category_exists = Category.objects.get(category=category)
             categories_ids.append(category_exists.id)
         except Category.DoesNotExist:
             # Criar nova categoria se não existir
-            create_category = CreateCategory(
-                data={'category': category['category']})
+            create_category = CreateCategory(data={'category': category})
             if create_category.is_valid():
                 create_category.save()
-                get_category = Category.objects.get(
-                    category=category['category'])
-                categories_ids.append(get_category.id)
+                categories_ids.append(create_category.instance.id)
             else:
                 category_valid = False
 
@@ -208,22 +207,30 @@ def get_or_create_category(place_create, categories):
             create_placeCat.save()
         else:
             category_valid = False
+
     return category_valid
 
 
 def get_or_create_photos(place_create, photos):
     photos_valid = True
     for photo in photos:
-        print("foto", photo)
-        create_photo = CreatePhotos(
-            data={'img_url': photo,
-                  'place_photo': place_create,
-                  'description': "Foto do local"})
-        if create_photo.is_valid(raise_exception=True):
-            print("foto criada")
-            create_photo.save()
+        # Verifique se o photo é realmente um arquivo
+        if isinstance(photo, InMemoryUploadedFile):
+            create_photo = CreatePhotos(
+                data={
+                    'img_url': photo,
+                    'place_photo': place_create,
+                    'description': "Foto do local"
+                }
+            )
+            if not create_photo.is_valid():
+                print(create_photo.errors)
+                photos_valid = False
+            else:
+                create_photo.save()
         else:
             photos_valid = False
+            print("Erro: O dado não é um arquivo válido.")
     return photos_valid
 
 

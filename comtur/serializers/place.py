@@ -43,13 +43,16 @@ class CreatePlaceCat(serializers.ModelSerializer):
 class PlaceGetSerializer(serializers.ModelSerializer):
     workStart = serializers.CharField(source="work_start")
     workStop = serializers.CharField(source="work_stop")
+    lowerPrice = serializers.IntegerField(source="lower_price")
+    higherPrice = serializers.IntegerField(source="higher_price")
 
     class Meta:
         model = Places
         fields = ('description', 'type',
                   'locationX', 'rating_number',
                   'locationY', 'workStart', 'workStop',
-                  'enterprise', 'about')
+                  'enterprise', 'about', 'lowerPrice,'
+                  'higherPrice')
 
 
 class PlacePhotoGetSerializer(serializers.ModelSerializer):
@@ -63,11 +66,15 @@ class PlacePhotoGetSerializer(serializers.ModelSerializer):
 class UpdatePlaces(serializers.ModelSerializer):
     workStart = serializers.CharField(source="work_start", required=False)
     workStop = serializers.CharField(source="work_stop", required=False)
+    lowerPrice = serializers.IntegerField(source="lower_price", required=False)
+    higherPrice = serializers.IntegerField(source="higher_price",
+                                           required=False)
 
     class Meta:
         model = Places
         fields = ('description', 'type', 'locationX', 'locationY',
-                  'workStart', 'workStop', 'about')
+                  'workStart', 'workStop', 'about', 'lowerPrice',
+                  'higherPrice')
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():

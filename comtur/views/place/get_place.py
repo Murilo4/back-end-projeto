@@ -90,5 +90,5 @@ def get_place(request, place_id):
     return JsonResponse({
         "success": True,
         "message": "Local encontrado",
-        "places": place_json,
+        "place": place_json,
     })

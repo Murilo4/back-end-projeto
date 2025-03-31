@@ -17,9 +17,9 @@ def get_place(request, place_id):
 
         username_list = UserName.objects.filter(
             places=place.id).order_by('create_order')
-
         names = []
         for username in username_list:
+            print(username)
             try:
                 name_obj = Names.objects.get(id=username.name_id)
                 names.append(name_obj.name)
@@ -73,5 +73,5 @@ def get_place(request, place_id):
     return JsonResponse({
         "success": True,
         "message": "Local encontrado",
-        "places": place_json,
+        "place": place_json,
     })
