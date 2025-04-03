@@ -144,6 +144,8 @@ def get_place(request, place_id):
                 "rating": place.rating_number if place.rating_number else 0,
                 "placeName": full_name,
                 "photos": photos_url,
+                "lowerPrice": place.lower_price,
+                "higherPrice": place.higher_price,
                 "categories": category_formated,
                 'addressType': address.address_type,
                 'addressName': full_name_address,

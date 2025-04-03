@@ -58,8 +58,8 @@ def create_place(request):
     state = request.data.get("state")
     placeName = placeName.strip()
     categories = request.data.getlist('categories[]')
-    # lower_price = request.data.get('lowerPrice')
-    # higher_price = request.data.get('higherPrice')
+    lower_price = request.data.get('lowerPrice')
+    higher_price = request.data.get('higherPrice')
 
     name = [n.lower().strip() for n in placeName.split() if n.strip()]
     if not description and type:
@@ -101,10 +101,9 @@ def create_place(request):
             "enterprise": enterprise,
             "city": city_reference[0],
             "about": request.data.get("about", ''),
-            # "lower_price": lower_price,
-            # "higher_price": higher_price
+            "lower_price": lower_price,
+            "higher_price": higher_price
         }
-        print("chegou para a criação do local")
         place_create = CreatePlace(data=new_place)
         if not place_create.is_valid(raise_exception=True):
             return JsonResponse({'success': False,
@@ -114,7 +113,6 @@ def create_place(request):
         place_create.save()
         get_place = Places.objects.filter(enterprise=enterprise, type=type[0]
                                           ).order_by('-created_at').first()
-        print(get_place)
         is_categories_valid = get_or_create_category(
             get_place.id, categories)
 
@@ -131,9 +129,7 @@ def create_place(request):
         except Subscription.DoesNotExist:
             pass
         photos = request.FILES.getlist('photos')
-        print(photos)
         qtt_photos = 2
-        print(qtt_photos, number_images)
         if qtt_photos > number_images:
             return JsonResponse({'success': False,
                                 'message':

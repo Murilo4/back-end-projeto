@@ -5,14 +5,17 @@ from ..models import PlacesStates
 
 
 class CreatePlace(serializers.ModelSerializer):
+    lowerPrice = serializers.IntegerField(source="lower_price")
+    higherPrice = serializers.IntegerField(source="higherPrice")
+
     class Meta:
         model = Places
         fields = ('description', 'type', 'locationX',
                   'locationY', 'work_start', 'work_stop',
-                  'enterprise', 'about', 'city')
+                  'enterprise', 'about', 'city', 'lowerPrice',
+                  'higherPrice')
 
     def create(self, validated_data):
-        print("chegou ao serializer")
         place = Places(**validated_data)
         place.save()
         return place

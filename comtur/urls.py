@@ -23,6 +23,7 @@ from .views.place.create_place import create_place
 from .views.place.delete_place import delete_place
 from .views.place.get_place import get_place
 from .views.place.update_place import update_place
+from .views.place.update_address_local import update_address_local
 from .views.user_place.add_comment import create_comment
 from .views.user_place.update_comment import update_comment
 from .views.user_place.delete_comment import delete_comment
@@ -99,12 +100,14 @@ urlpatterns = [
          get_place, name="get_place"),
     path("get-all-address/",
          get_all_address, name="get_all_address"),
-    path('update-place/',
+    path('update-place/<int:placeId>/',
          update_place, name="update_place"),
     path('get-user-places/',
          get_place_user, name="get_place_user"),
     path('delete-place/<int:placeId>/',
          delete_place, name="delete_place"),
+    path('update-address-local/<int:placeId>/',
+         update_address_local, name="update_address_local"),
     # user place
     path('create-comment/',
          create_comment, name='create_comment'),

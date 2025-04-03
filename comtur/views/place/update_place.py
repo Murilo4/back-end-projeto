@@ -1,21 +1,18 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, Category, PlaceCategories
 from ...serializers.place import UpdatePlaces, CreateCategory, CreatePlaceCat
 import os
-from ...throttles import DailyRateThrottle, HourlyRateThrottle
-from ...throttles import MinuteRateThrottleAnon
 from django.db import transaction
+import json
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-@throttle_classes([MinuteRateThrottleAnon,
-                   HourlyRateThrottle, DailyRateThrottle])
-def update_place(request):
+def update_place(request, placeId):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
@@ -28,7 +25,7 @@ def update_place(request):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        place_id = request.data.get('placeId')
+        place_id = placeId
 
         place = Places.objects.get(id=place_id)
 
@@ -42,13 +39,18 @@ def update_place(request):
                                      'message': 'Invalid data'},
                                     status=status.HTTP_400_BAD_REQUEST)
 
-            img_ids_to_keep, img_ids_to_add = process_img(
-                    request.data.get('photos', []), place)
-            category_to_keep, category_to_add = process_cat(
-                request.data.get('categories', []), place)
+            photo = request.data.get('photos', [])
+            if photo:
+                img_ids_to_keep, img_ids_to_add = process_img(
+                    photo, place)
+                remove_old_img(place, img_ids_to_keep)
 
-            remove_old_cat(place, category_to_keep)
-            remove_old_img(place, img_ids_to_keep)
+            category = request.data.getlist('categories', [])
+            if category:
+                category_to_keep, category_to_add = process_cat(
+                    category, place)
+
+                remove_old_cat(place, category_to_keep)
 
         return JsonResponse({'success': True,
                             'message': 'Usuário atualizado com sucesso'},
@@ -117,38 +119,41 @@ def remove_old_img(place, exist_img_urls):
 
 
 def process_cat(existing_categories, place):
+    # Desserializar categorias, se necessário
+    if isinstance(existing_categories, str):
+        existing_categories = json.loads(existing_categories)
+
     category_ids_to_keep = set()
     category_ids_to_add = []
 
     for category_data in existing_categories:
+        # Acesse o campo "category" corretamente
+        category_name = category_data.get("category")
+        print(category_data)
+
         try:
             # Tentando obter a categoria diretamente com get()
-            existing_category = Category.objects.get(category=category_data)
+            existing_category = Category.objects.get(category=category_name)
             category_ids_to_keep.add(existing_category.id)
         except Category.DoesNotExist:
-            new_category = CreateCategory(data={"category": category_data})
+            new_category = CreateCategory(data={"category": category_name})
             if new_category.is_valid(raise_exception=True):
                 new_category.save()
                 get_category = Category.objects.filter(
-                    category=category_data).first()
+                    category=category_name).first()
                 if get_category:
                     category_ids_to_add.append(get_category.id)
                     category_ids_to_keep.add(get_category.id)
 
     for cat in category_ids_to_keep:
         try:
-            PlaceCategories.objects.get(category=cat,
-                                        place=place)
+            PlaceCategories.objects.get(category=cat, place=place)
         except PlaceCategories.DoesNotExist:
             category_ids_to_add.append(cat)
 
     for ids in category_ids_to_add:
-        print(ids)
-        New_placeCategory = CreatePlaceCat(
-            data={
-                'place': place.id,
-                'category': ids
-            })
+        New_placeCategory = CreatePlaceCat(data={
+            'place': place.id, 'category': ids})
         if New_placeCategory.is_valid(raise_exception=True):
             New_placeCategory.save()
 

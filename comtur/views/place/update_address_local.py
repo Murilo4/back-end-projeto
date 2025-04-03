@@ -1,24 +1,23 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
 from django.db import transaction
 from dotenv import load_dotenv
-from ....models import Address, HouseNumber, Neighborhood, neighborhoodAddress
-from ....models import Street, addressStreet, City
-from ....serializers.address import UpdateAddress, CreateHouseNumber
-from ....serializers.address import State, CreateNeighborhood, CreateStreet
-from ....serializers.address import CreateState, CreateNeighborAddress
-from ....serializers.address import UpdateAddressState, createCity
-from ....serializers.address import CreateStreetAddress, UpdateAddressNumber
-from ....serializers.address import UpdateAddressCity
-import jwt
+from ...models import Address, HouseNumber, Neighborhood, neighborhoodAddress
+from ...models import Street, addressStreet, City, Places
+from ...serializers.address import UpdateAddress, CreateHouseNumber
+from ...serializers.address import State, CreateNeighborhood, CreateStreet
+from ...serializers.address import CreateState, CreateNeighborAddress
+from ...serializers.address import UpdateAddressState, createCity
+from ...serializers.address import CreateStreetAddress, UpdateAddressNumber
+from ...serializers.address import UpdateAddressCity
 import os
 load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-def update_address(request, token):
+def update_address_local(request, placeId):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
@@ -31,14 +30,11 @@ def update_address(request, token):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        token_user = auth_header.split(' ')[1]
-
-        payload = jwt.decode(token_user, SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get('id')
-
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"],
-                                   options={"verify_signature": False})
-        address_id = decoded_token.get('address_id')
+        place_id = Places.objects.get(id=placeId)
+        if not place_id:
+            return JsonResponse({"success": False,
+                                 "message": "local não encontraod"},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         state = request.data.get('state')
         neighborhood = request.data.get('neighborhood')
@@ -47,7 +43,7 @@ def update_address(request, token):
         city = request.data.get('city')
 
         try:
-            address = Address.objects.get(id=address_id, user_address=user_id)
+            address = Address.objects.get(place=place_id)
         except Address.DoesNotExist:
             return JsonResponse({'success': False,
                                  'message': 'Endereço não encontrado.'},
@@ -55,22 +51,24 @@ def update_address(request, token):
 
         up_address = {
             'postal': request.data.get('cep'),
-            'address_type': request.data.get('addressType')
+            'address_type': "Comercial"
         }
         with transaction.atomic():
             update_address_base = UpdateAddress(address,
                                                 data=up_address,
                                                 partial=True)
-            if update_address_base.is_valid(raise_exception=True):
-                update_address_base.save()
-
+            if not update_address_base.is_valid(raise_exception=True):
+                return JsonResponse({"success": False,
+                                     "message":
+                                     "Não foi possivel atualizar o endereço"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            update_address_base.save()
             number_updated, ref_number = update_numbers(
-                numbers, address_id)
+                numbers, address.id)
             state_updated, ref_state = update_state(
-                state, address_id)
+                state, address.id)
             city_updated, ref_city = update_city(
-                city, address_id)
-
+                city, address.id)
             if number_updated:
                 update_address = UpdateAddressNumber(address,
                                                      data={
@@ -92,7 +90,7 @@ def update_address(request, token):
                     update_address.save()
                 else:
                     return JsonResponse({'success': False,
-                                        'message': 'Numero invalido'},
+                                        'message': 'cidade invalido'},
                                         status=status.HTTP_400_BAD_REQUEST)
             if state_updated:
                 update_address = UpdateAddressState(address,
@@ -104,27 +102,22 @@ def update_address(request, token):
                     return JsonResponse({'success': False,
                                         'message': 'Invalid data'},
                                         status=status.HTTP_400_BAD_REQUEST)
-
             userName = neighborhood.strip()
-
             update_neigh = [
                 n.lower().strip() for n in userName.split() if n.strip()]
-            update_neighbor(update_neigh, address_id)
-
+            update_neighbor(update_neigh, address.id)
             street_ = street.strip()
             new_street = [
                 s.lower().strip() for s in street_.split() if s.strip()]
-            update_street(new_street, address_id)
+            update_street(new_street, address.id)
 
             return JsonResponse({'success': True,
                                 'message': 'Endereço atualizado com sucesso'},
                                 status=status.HTTP_200_OK)
-
     except Address.DoesNotExist:
         return JsonResponse({'success': False,
                              'message': 'Endereço não encontrado'},
                             status=status.HTTP_404_NOT_FOUND)
-
     except Exception as e:
         return JsonResponse({'success': False,
                              'message': 'Erro interno no servidor.',
@@ -144,7 +137,6 @@ def update_numbers(numbers, address_id):
             return is_updated, referencia
         else:
             referencia = number_obj.id
-            print("salvou o numero")
     except HouseNumber.DoesNotExist:
         serializer = CreateHouseNumber(data={"number": numbers})
         if serializer.is_valid():
@@ -289,5 +281,4 @@ def update_street(streets, address_id):
                 order += 1
             else:
                 is_updated = False
-
     return is_updated
