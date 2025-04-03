@@ -9,6 +9,7 @@ from .views.account.update_account import update_user
 from .views.account.delete_account import delete_user
 from .views.account.update_account import update_user_photo
 from .views.address.add_address import create_address
+from .views.address.create_address_place import create_address_place
 from .views.address.get_address import get_one_address
 from .views.address.get_all_address import get_all_address
 from .views.address.update_address import update_address
@@ -26,10 +27,11 @@ from .views.user_place.add_comment import create_comment
 from .views.user_place.update_comment import update_comment
 from .views.user_place.delete_comment import delete_comment
 from .views.place.get_user_place import get_place_user
-from .views.user_place.add_rating import create_rating
 from .views.user_place.update_rating import update_rating
 from .views.user_place.delete_rating import delete_rating
 from .views.user_place.add_favorite import set_favorite
+from .views.user_place.add_rating import create_rating
+from .views.user_place.get_favorite import get_favorite
 from .views.account.user_creation import validate_jwt
 from .views.account.user_creation import generate_new_token
 from .views.account.send_sms import send_message
@@ -37,6 +39,10 @@ from .views.place.get_categories import get_categories
 from .views.place.get_types import get_types
 from .views.search_new_places.search import search_suggestions
 from .views.account.account_type import get_user_type
+from .views.doub.create_doub import create_doub
+from .views.doub.delete_doub import delete_doub
+from .views.doub.get_doubs import get_doub
+from .views.doub.update_doub import update_doub
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -75,6 +81,8 @@ urlpatterns = [
          update_address, name="update_address"),
     path("delete-address/<token>/",
          delete_address, name="delete_address"),
+    path("create-address-place/",
+         create_address_place, name="create_address_place"),
     # Password Reset
     path('request-reset/',
          password_reset, name='request-reset'),
@@ -87,7 +95,6 @@ urlpatterns = [
     # Place
     path('create-place/',
          create_place, name="create_place"),
-    path('delete-place/', delete_place, name="delete_place"),
     path('get-place/<int:place_id>/',
          get_place, name="get_place"),
     path("get-all-address/",
@@ -96,23 +103,46 @@ urlpatterns = [
          update_place, name="update_place"),
     path('get-user-places/',
          get_place_user, name="get_place_user"),
-    path('delete-place/<int:placeId>/', delete_place, name="delete_place"),
+    path('delete-place/<int:placeId>/',
+         delete_place, name="delete_place"),
     # user place
-    path('create-comment/', create_comment, name='create_comment'),
-    path('update-comment/', update_comment, name='update_comment'),
-    path('delete-comment/', delete_comment, name='delete_comment'),
-    path('create-rating/', create_rating, name='create_rating'),
-    path('update-rating/', update_rating, name='update_rating'),
-    path('delete-rating/', delete_rating, name='delete_rating'),
-    path('set-favorite/', set_favorite, name='set_favorite'),
+    path('create-comment/',
+         create_comment, name='create_comment'),
+    path('update-comment/',
+         update_comment, name='update_comment'),
+    path('delete-comment/',
+         delete_comment, name='delete_comment'),
+    path('create-rating/',
+         create_rating, name='create_rating'),
+    path('update-rating/',
+         update_rating, name='update_rating'),
+    path('delete-rating/',
+         delete_rating, name='delete_rating'),
+    path('set-favorite/<int:placeId>/',
+         set_favorite, name='set_favorite'),
+    path("create-rating/",
+         create_rating, name="create_rating"),
+    path("get-favorite/<int:placeId>/",
+         get_favorite, name="get_favorite"),
 
     # path('send-sms/', send_sms_msg, name='send_sms_msg'),
-    path("send-message/", send_message, name="send_message"),
+    path("send-message/",
+         send_message, name="send_message"),
     path("get-all-plans/",
          get_all_plans, name="get_all_plans"),
-    path("search-suggestions/", search_suggestions, name="search_suggestions"),
+    path("search-suggestions/",
+         search_suggestions, name="search_suggestions"),
     path("get-categories/",
          get_categories, name="get_categories"),
     path("get-types/",
          get_types, name="get_types"),
+    # doub paths
+    path("create-doub/",
+         create_doub, name="create_doub"),
+    path("get-doubs/",
+         get_doub, name="get_doub"),
+    path("update-doub/<int:doubId>/",
+         update_doub, name="update_doub"),
+    path("delete-doub/<int:doubId>/",
+         delete_doub, name="delete_doub"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

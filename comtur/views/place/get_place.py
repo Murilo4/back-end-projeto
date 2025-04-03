@@ -3,7 +3,8 @@ from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, PlaceCategories, PlacesComments
 from ...models import Category, UserPlaces, UserName, Names, PlacesCity
-from ...models import PlacesStates
+from ...models import PlacesStates, Address, neighborhoodAddress, Neighborhood
+from ...models import addressStreet, Street, City, HouseNumber, State
 
 
 @api_view(['GET'])
@@ -65,6 +66,73 @@ def get_place(request, place_id):
             photo_url = photo.img_url.url if photo.img_url else None
             photos_url.append(photo_url)
 
+        try:
+            address = Address.objects.get(place=place_id)
+        except Address.DoesNotExist:
+            return JsonResponse({'success': False,
+                                 'message': 'Endereço não encontrado.'},
+                                status=status.HTTP_404_NOT_FOUND)
+        try:
+            neighbor_address = neighborhoodAddress.objects.filter(
+                address=address.id).order_by('neighbor_order')
+            new_neighbor = []
+            for name in neighbor_address:
+                try:
+                    name_obj = Neighborhood.objects.get(
+                        id=name.neighborhood.id)
+                    new_neighbor.append(name_obj.neighborhood)
+                except Neighborhood.DoesNotExist:
+                    continue
+            full_neighbor_formated = " ".join(new_neighbor)
+
+        except (neighborhoodAddress.DoesNotExist, Neighborhood.DoesNotExist):
+            return JsonResponse({'success': False,
+                                 'message': 'Bairro não encontrado.'},
+                                status=status.HTTP_404_NOT_FOUND)
+        try:
+            name_address = addressStreet.objects.filter(
+                address=address.id).order_by('street_order')
+            full_name_st = []
+            for name in name_address:
+                try:
+                    name_obj = Street.objects.get(
+                        id=name.street.id)
+                    full_name_st.append(name_obj.street)
+                except Street.DoesNotExist:
+                    continue
+            full_street_formated = " ".join(full_name_st)
+        except (Street.DoesNotExist, addressStreet.DoesNotExist):
+            return JsonResponse({'success': False,
+                                 'message': 'Rua não encontrado.'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            name_address = UserName.objects.filter(
+                address=address.id).order_by('create_order')
+            full_name_ad = []
+            for name in name_address:
+                try:
+                    name_obj = Names.objects.get(
+                        id=name.name_id)
+                    full_name_ad.append(name_obj.name)
+                except Names.DoesNotExist:
+                    continue
+
+            full_name_address = " ".join(full_name_ad)
+        except (Names.DoesNotExist, UserName.DoesNotExist):
+            return JsonResponse({'success': False,
+                                 'message': 'Nome não encontrado.'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            city = City.objects.get(id=address.city.id)
+            number = HouseNumber.objects.get(id=address.number.id)
+            state = State.objects.get(id=address.state.id)
+        except (City.DoesNotExist, HouseNumber.DoesNotExist):
+            return JsonResponse({'success': False,
+                                 'message':
+                                 'Não foi possivel retornar o endereço'},
+                                status=status.HTTP_404_NOT_FOUND)
         place_json = {
                 "description": place.description,
                 "type": place.type,
@@ -75,10 +143,16 @@ def get_place(request, place_id):
                 "about": place.about,
                 "rating": place.rating_number if place.rating_number else 0,
                 "placeName": full_name,
-                "city": city.city,
-                "state": state.state,
                 "photos": photos_url,
                 "categories": category_formated,
+                'addressType': address.address_type,
+                'addressName': full_name_address,
+                "street": full_street_formated,
+                "state": state.state,
+                "number": number.number,
+                "neighborhood": full_neighbor_formated,
+                "city": city.city,
+                "cep": address.postal,
                 "comments": comments_formated,
             }
     except (PlacesPhotos.DoesNotExist,

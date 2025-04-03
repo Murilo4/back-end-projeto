@@ -77,6 +77,7 @@ class Places(models.Model):
     # higher_price = models.IntegerField()
     about = models.TextField()
     enterprise = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    medium_rate = models.FloatField()
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -284,7 +285,7 @@ class PlacesRating(models.Model):
     id = models.IntegerField(primary_key=True)
     rating = models.IntegerField()
     place_rating = models.ForeignKey(Places, on_delete=models.CASCADE)
-    user_rating = models.ForeignKey(UserPlaces, on_delete=models.CASCADE)
+    user_place = models.ForeignKey(UserPlaces, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -339,3 +340,15 @@ class PlaceTypes(models.Model):
     class Meta:
         managed = False
         db_table = "placesTypes"
+
+
+class ComumDoubs(models.Model):
+    id = models.IntegerField(primary_key=True)
+    doub = models.TextField()
+    doub_answer = models.TextField()
+    doub_photo = models.ImageField(upload_to='doub_photos/',
+                                   blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = "ComumDoubs"

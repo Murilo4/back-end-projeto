@@ -1,7 +1,7 @@
-from rest_framework.decorators import api_view  # , throttle_classes
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
-from ...serializers.address import CreateAddress, CreateHouseNumber
+from ...serializers.address import CreateAddressPlace, CreateHouseNumber
 from ...serializers.address import CreateState, createCity, CreateNeighborhood
 from ...serializers.address import CreateStreetAddress, CreateStreet
 from ...serializers.address import CreateNeighborAddress
@@ -9,8 +9,6 @@ from ...serializers.Names import CreateNames, CreateUserNameAddress
 from django.db import transaction
 import jwt
 import os
-# from ...throttles import DailyRateThrottle, HourlyRateThrottle
-# from ...throttles import MinuteRateThrottleAnon
 from ...models import HouseNumber, Address, State, City, Street, Neighborhood
 from ...models import Names
 from dotenv import load_dotenv
@@ -19,9 +17,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['POST'])
-# @throttle_classes([
-#     MinuteRateThrottleAnon, HourlyRateThrottle, DailyRateThrottle])
-def create_address(request):
+def create_address_place(request):
     if request.method != 'POST':
         return JsonResponse({'success': False,
                             'message': 'Invalid request method'},
@@ -34,11 +30,6 @@ def create_address(request):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        token = auth_header.split(' ')[1]
-
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get('id')
-
         place_id = request.data.get('placeId', None)
         with transaction.atomic():
             number = request.data.get('number')
@@ -46,7 +37,6 @@ def create_address(request):
             city = request.data.get('city')
             street = request.data.get('street')
             neighbor = request.data.get('neighborhood')
-            address_type = request.data.get('addressType')
             names = request.data.get('addressName')
 
             name = [n.strip() for n in names.split() if n.strip()]
@@ -72,7 +62,7 @@ def create_address(request):
                 return JsonResponse({
                     "success": False,
                     "message": "Erro ao criar cidade",
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             postal = request.data.get('cep')
             try:
@@ -83,22 +73,22 @@ def create_address(request):
                 return JsonResponse({"success": False,
                                     "message": "Erro ao criar Endereço"},
                                     status=status.HTTP_400_BAD_REQUEST)
-            if place_id is None:
-                new_address = {
-                    'user_address': user_id,
-                    'city': get_city.id,
-                    'address_type': address_type,
-                    'state': get_state.id,
-                    'number': link_number.id,
-                    'postal': postal
-                }
 
-            create = CreateAddress(data=new_address)
+            new_address = {
+                'place': place_id,
+                'city': get_city.id,
+                'address_type': "comercial",
+                'state': get_state.id,
+                'number': link_number.id,
+                'postal': postal
+            }
+
+            create = CreateAddressPlace(data=new_address)
             if create.is_valid(raise_exception=True):
                 create.save()
 
                 get_address = Address.objects.get(
-                    user_address=user_id, city=get_city.id, postal=postal,
+                    place=place_id, city=get_city.id, postal=postal,
                     number=link_number.id, state=get_state.id)
                 address_id = get_address.id
                 created_street = create_street(
@@ -245,11 +235,11 @@ def create_neighborhood(neighborhood, address):
     order = 1
     for referencia in referencias_neighborhood:
         address_neighborhood = CreateNeighborAddress(
-                                                data={
-                                                    'address': address,
-                                                    'neighborhood': referencia,
-                                                    'neighbor_order': order
-                                                    })
+            data={
+                'address': address,
+                'neighborhood': referencia,
+                'neighbor_order': order
+            })
         if address_neighborhood.is_valid(raise_exception=True):
             address_neighborhood.save()
             order += 1
@@ -278,10 +268,10 @@ def create_names(name, address):
     order = 1
     for referencia in referencias:
         username = CreateUserNameAddress(data={
-                                'address': address,
-                                'name_id': referencia,
-                                'create_order': order
-                                })
+            'address': address,
+            'name_id': referencia,
+            'create_order': order
+        })
         if username.is_valid(raise_exception=True):
             username.save()
             order += 1

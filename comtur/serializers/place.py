@@ -127,7 +127,7 @@ class CreateUserPlace(serializers.ModelSerializer):
 class CreatePlaceRating(serializers.ModelSerializer):
     class Meta:
         model = PlacesRating
-        fields = ('rating', 'place_rating', 'user_rating')
+        fields = ('rating', 'place_rating', 'user_place')
 
     def create(self, validated_data):
         rating = PlacesRating(**validated_data)
@@ -224,5 +224,17 @@ class UpdatePlacesCityState(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class UpdateMediumRating(serializers.ModelSerializer):
+    class Meta:
+        model = Places
+        fields = ['medium_rating']
+
+    def update(self, instance, validated_data):
+        instance.medium_rating = validated_data.get(
+            'medium_rating', instance.medium_rating)
         instance.save()
         return instance

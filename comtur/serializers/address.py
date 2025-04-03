@@ -17,6 +17,19 @@ class CreateAddress(serializers.ModelSerializer):
         return address
 
 
+class CreateAddressPlace(serializers.ModelSerializer):
+
+    class Meta:
+        model = Address
+        fields = ('place', 'number', 'state', 'city', 'postal',
+                  'address_type')
+
+    def create(self, validated_data):
+        address = Address(**validated_data)
+        address.save()
+        return address
+
+
 class UpdateAddress(serializers.ModelSerializer):
     class Meta:
         model = Address

@@ -212,14 +212,14 @@ def forgot_password(request):
     try:
         email = request.data.get('email')
         user = NormalUser.objects.get(email=email)
-        number_random = random_number()
+        num_rndn = random_number()
         token = account_activation_token.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_url = f"http://127.0.0.1:3000/forgot-password/{uid}/{token}/{number_random}"
+        url = f"http://127.0.0.1:3000/forgot-password/{uid}/{token}/{num_rndn}"
 
         send_mail(
             'Reset your password',
-            f'Use the link to reset your password: {reset_url}',
+            f'Use the link to reset your password: {url}',
             user.email,
             [user.email],
             fail_silently=False,
