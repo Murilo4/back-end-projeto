@@ -5,6 +5,7 @@ from django.db import transaction
 from ...models import UserPlaces, PlacesRating, Places
 from ...serializers.place import CreateUserPlace, UpdatePlacesUsers
 from ...serializers.place import CreatePlaceRating, UpdateMediumRating
+from ...serializers.place import UpdatePlaceRating
 import threading
 import os
 import jwt
@@ -62,76 +63,94 @@ def create_rating(request):
         pass
 
     with transaction.atomic():
-        if rating is not None:
-            user_rating = PlacesRating.objects.get(
-                            user_place=user_place.id)
-            if user_rating:
-                add_rating = False
-            else:
-                add_rating = True
-
-            if user_place:
+        if user_place:
+            user_rating = None
+            try:
+                user_rating = PlacesRating.objects.filter(
+                    user_place=user_place.id).exists()
+                no_rating = False
+            except PlacesRating.DoesNotExist:
+                no_rating = True
+            threading.Thread(
+                    target=update_place_rating, args=(
+                        rating, place_id, no_rating)).start()
+            if not user_rating:
                 serializer = CreatePlaceRating(
                     data={"place_rating": place_id,
                           "rating": rating,
                           "user_place": user_place.id})
-                if serializer.is_valid(raise_exception=True):
-                    serializer.save()
+                if not serializer.is_valid(raise_exception=True):
+                    return JsonResponse({'success': False,
+                                        'message':
+                                         'avaliação invalida'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
+                rating_number = PlacesRating.objects.filter(
+                    place_rating=place_id).count()
+                update_place = UpdatePlacesUsers(
+                                        place,
+                                        data={
+                                         'rating_number': rating_number + 1},
+                                        partial=True)
+                if update_place.is_valid(raise_exception=True):
+                    update_place.save()
+
+                    return JsonResponse({'success': True,
+                                        'message':
+                                         'avaliação adicionado com sucesso'},
+                                        status=status.HTTP_200_OK)
                 else:
                     return JsonResponse({'success': False,
                                         'message': 'avaliação invalida'},
                                         status=status.HTTP_400_BAD_REQUEST)
 
-                if not user_rating:
-                    rating_number = PlacesRating.objects.filter(
-                        place_rating=place_id).count()
-                    update_place = UpdatePlacesUsers(
-                            place,
-                            data={
-                                'rating_number': rating_number + 1},
-                            partial=True)
-                    if update_place.is_valid(raise_exception=True):
-                        update_place.save()
+            if user_rating is True:
+                place_rating_data = PlacesRating.objects.get(
+                    user_place=user_place.id,
+                    place_rating=place_id)
+                update_place = UpdatePlaceRating(
+                    place_rating_data,
+                    data={
+                        "rating": rating},
+                    partial=True)
+                if update_place.is_valid(raise_exception=True):
+                    update_place.save()
 
                 return JsonResponse({'success': True,
                                     'message':
-                                     'avaliação adicionado com sucesso'},
+                                        'avaliação adicionado com sucesso'},
                                     status=status.HTTP_200_OK)
-            else:
-                new_user_place = CreateUserPlace(data={
-                                                'user_place': user_id,
-                                                'place': place_id})
-                if new_user_place.is_valid(raise_exception=True):
-                    new_user_place.save()
-                    get_user_place = UserPlaces.objects.get(user_place=user_id,
-                                                            place_id=place_id)
-                    serializer = CreatePlaceRating(
-                            data={"place_rating": place_id,
-                                  "rating": rating,
-                                  "user_rating": get_user_place.id})
-                    if serializer.is_valid(raise_exception=True):
-                        serializer.save()
-                        rating_number = PlacesRating.objects.filter(
-                            place_rating=place_id).count()
-                        update_place = UpdatePlacesUsers(
-                                    place,
-                                    data={
-                                        'rating_number': rating_number},
+        elif not user_place:
+            new_user_place = CreateUserPlace(data={
+                'user_place': user_id,
+                'place': place_id})
+            if new_user_place.is_valid(raise_exception=True):
+                new_user_place.save()
+                get_user_place = UserPlaces.objects.get(user_place=user_id,
+                                                        place_id=place_id)
+                serializer = CreatePlaceRating(
+                    data={"place_rating": place_id,
+                          "rating": rating,
+                          "user_rating": user_id})
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+                    user_place_data = {
+                        "user_place": get_user_place.id,
+                        "place": place_id,
+                    }
+                    update_place = CreateUserPlace(
+                                    data=user_place_data,
                                     partial=True)
-                        if update_place.is_valid(raise_exception=True):
-                            update_place.save()
-            threading.Thread(
-                        target=update_place_rating, args=(
-                            rating, place_id, add_rating)).start()
+                    if update_place.is_valid(raise_exception=True):
+                        update_place.save()
 
             return JsonResponse({'success': True,
                                 'message':
                                  'avaliação criado com sucesso'},
                                 status=status.HTTP_200_OK)
-        else:
-            return JsonResponse({'success': False,
-                                 'message': 'avaliação invalido'},
-                                status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'success': True,
+                             'message': 'avaliação atualizada com sucesso'},
+                            status=status.HTTP_200_OK)
 
 
 def update_place_rating(rating, place_id, add_rating):
@@ -156,7 +175,7 @@ def update_place_rating(rating, place_id, add_rating):
         place_rating = value / place.rating_number
 
     rating_update = UpdateMediumRating(place,
-                                       data={"medium_rating": place_rating},
+                                       data={"medium_rate": place_rating},
                                        partial=True)
     if not rating_update.is_valid():
         return JsonResponse({"success": False,

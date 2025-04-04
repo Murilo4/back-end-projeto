@@ -21,14 +21,16 @@ from .views.account.update_account import password_forgot_change
 from .views.account.update_account import forgot_password
 from .views.place.create_place import create_place
 from .views.place.delete_place import delete_place
+from .views.place.get_place_cat_and_comments import get_place_lists
 from .views.place.get_place import get_place
 from .views.place.update_place import update_place
+from .views.place.get_place_address import get_place_address
 from .views.place.update_address_local import update_address_local
 from .views.user_place.add_comment import create_comment
 from .views.user_place.update_comment import update_comment
 from .views.user_place.delete_comment import delete_comment
 from .views.place.get_user_place import get_place_user
-from .views.user_place.update_rating import update_rating
+from .views.user_place.get_rating import get_rating
 from .views.user_place.delete_rating import delete_rating
 from .views.user_place.add_favorite import set_favorite
 from .views.user_place.add_rating import create_rating
@@ -38,6 +40,7 @@ from .views.account.user_creation import generate_new_token
 from .views.account.send_sms import send_message
 from .views.place.get_categories import get_categories
 from .views.place.get_types import get_types
+from .views.place.get_place_base import get_place_base
 from .views.search_new_places.search import search_suggestions
 from .views.account.account_type import get_user_type
 from .views.doub.create_doub import create_doub
@@ -84,6 +87,12 @@ urlpatterns = [
          delete_address, name="delete_address"),
     path("create-address-place/",
          create_address_place, name="create_address_place"),
+    path("get-place-base/<int:place_id>/",
+         get_place_base, name="get_place_base"),
+    path("get-place-lists/<int:place_id>/",
+         get_place_lists, name="get_place_lists"),
+    path("get-place-address/<int:place_id>/",
+         get_place_address, name="get_place_address"),
     # Password Reset
     path('request-reset/',
          password_reset, name='request-reset'),
@@ -109,7 +118,7 @@ urlpatterns = [
     path('update-address-local/<int:placeId>/',
          update_address_local, name="update_address_local"),
     # user place
-    path('create-comment/',
+    path('send-comment/<int:placeId>/',
          create_comment, name='create_comment'),
     path('update-comment/',
          update_comment, name='update_comment'),
@@ -117,8 +126,8 @@ urlpatterns = [
          delete_comment, name='delete_comment'),
     path('create-rating/',
          create_rating, name='create_rating'),
-    path('update-rating/',
-         update_rating, name='update_rating'),
+    path('get-rating/<int:placeId>/',
+         get_rating, name='get_rating'),
     path('delete-rating/',
          delete_rating, name='delete_rating'),
     path('set-favorite/<int:placeId>/',

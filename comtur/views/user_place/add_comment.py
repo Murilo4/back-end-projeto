@@ -26,13 +26,12 @@ def create_comment(request, placeId):
         }, status=status.HTTP_401_UNAUTHORIZED)
 
     token = auth_header.split(' ')[1]
-
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user_id = payload.get('id')
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get('id')
         place_id = placeId
         comment = request.data.get('comment', None)
-
+        print(comment)
         if not user_id or not place_id:
             return JsonResponse({'success': False,
                                 'message':
@@ -62,7 +61,7 @@ def create_comment(request, placeId):
                                         "Erro ao salvar comentario"},
                                         status=status.HTTP_400_BAD_REQUEST)
                 serializer.save()
-
+                print("criou o comentario na tabela de userplace")
                 comments_number = PlacesComments.objects.filter(
                     place_comment=place_id).count()
                 update_place = UpdatePlacesUsers(

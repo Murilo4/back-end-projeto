@@ -40,6 +40,7 @@ def update_place(request, placeId):
                                     status=status.HTTP_400_BAD_REQUEST)
 
             photo = request.data.get('photos', [])
+            print(photo)
             if photo:
                 img_ids_to_keep, img_ids_to_add = process_img(
                     photo, place)
@@ -76,6 +77,7 @@ def process_img(existing_images, place):
         place_photo=place).values_list('img_url', flat=True))
 
     for image_data in existing_images:
+        print(image_data)
         img_url = image_data.get('url')
         img_description = image_data.get('description', None)
 
