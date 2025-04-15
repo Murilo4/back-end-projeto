@@ -78,6 +78,8 @@ class Places(models.Model):
     about = models.TextField()
     enterprise = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
     medium_rate = models.FloatField()
+    slug = models.SlugField(max_length=255, unique=True)
+    is_place_valid = models.BooleanField(default=0)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
 
@@ -202,6 +204,9 @@ class PlansConfig(models.Model):
     points_multiplier = models.IntegerField()
     number_events = models.IntegerField()
     image_on_questions = models.BooleanField()
+    number_images = models.IntegerField()
+    number_videos = models.IntegerField()
+    places_allowed = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

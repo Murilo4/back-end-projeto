@@ -40,6 +40,8 @@ def get_place_user(request):
                             status=status.HTTP_400_BAD_REQUEST)
     try:
         place = Places.objects.filter(enterprise=cnpj)
+        thread_response = get_number_places(cnpj)
+
     except Places.DoesNotExist:
         return JsonResponse({"success": False,
                             "message": "Local não encontrado"},
@@ -91,6 +93,7 @@ def get_place_user(request):
                 "placeName": full_name,
                 "city": city.city,
                 "state": state.state,
+                "slug": p.slug,
             }
             places_formated.append({
                 "place": place_json,
@@ -107,4 +110,13 @@ def get_place_user(request):
         "success": True,
         "message": "Local encontrado",
         "place": places_formated,
-    })
+        "numberPlaces": thread_response,
+    }, status=status.HTTP_200_OK)
+
+
+def get_number_places(cnpj):
+    try:
+        place = Places.objects.filter(enterprise=cnpj).count()
+        return place
+    except Places.DoesNotExist:
+        place = 0

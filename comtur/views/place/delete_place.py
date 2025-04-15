@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, PlaceCategories, PlacesComments

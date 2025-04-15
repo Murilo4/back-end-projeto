@@ -4,28 +4,39 @@ from rest_framework import status
 from django.db import transaction
 from ...models import PlacesComments, UserPlaces
 from ...serializers.place import UpdatePlaceComment
+import os
+import jwt
+from dotenv import load_dotenv
+load_dotenv()
+SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-def update_comment(request):
+def update_comment(request, placeId):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'metodo invalido'},
                             status=status.HTTP_400_BAD_REQUEST)
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({
+            "success": False,
+            "message": "Token de acesso não fornecido ou formato inválido."
+        }, status=status.HTTP_401_UNAUTHORIZED)
 
-    user_id = request.data.get('userId')
-    place_id = request.data.get('placeId')
+    token = auth_header.split(' ')[1]
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user_id = payload.get('id')
+    place_id = placeId
     comment = request.data.get('comment', None)
-    comment_id = request.data.get('commentId', None)
 
-    if not user_id or not place_id or not comment_id:
+    if not user_id or not place_id:
         return JsonResponse({'success': False,
                              'message': 'Campos obrigatórios não preenchidos'},
                             status=status.HTTP_400_BAD_REQUEST)
     user_place = UserPlaces.objects.get(user_place=user_id,
                                         place_id=place_id)
-    place_comment = PlacesComments.objects.get(id=comment_id,
-                                               user_comment=user_place.id,
+    place_comment = PlacesComments.objects.get(user_comment=user_place.id,
                                                place_comment=place_id)
 
     with transaction.atomic():

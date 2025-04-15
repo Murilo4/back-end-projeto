@@ -5,15 +5,13 @@ from ..models import PlacesStates
 
 
 class CreatePlace(serializers.ModelSerializer):
-    lowerPrice = serializers.IntegerField(source="lower_price")
-    higherPrice = serializers.IntegerField(source="higherPrice")
 
     class Meta:
         model = Places
         fields = ('description', 'type', 'locationX',
                   'locationY', 'work_start', 'work_stop',
-                  'enterprise', 'about', 'city', 'lowerPrice',
-                  'higherPrice')
+                  'enterprise', 'about', 'city', 'lower_price',
+                  'higher_price', 'slug')
 
     def create(self, validated_data):
         place = Places(**validated_data)
@@ -48,14 +46,15 @@ class PlaceGetSerializer(serializers.ModelSerializer):
     workStop = serializers.CharField(source="work_stop")
     lowerPrice = serializers.IntegerField(source="lower_price")
     higherPrice = serializers.IntegerField(source="higher_price")
+    ratingNumber = serializers.IntegerField(source="rating_number")
+    mediumRate = serializers.FloatField(source="medium_rate")
 
     class Meta:
         model = Places
-        fields = ('description', 'type',
-                  'locationX', 'rating_number',
-                  'locationY', 'workStart', 'workStop',
-                  'enterprise', 'about', 'lowerPrice,'
-                  'higherPrice')
+        fields = ('id', 'description', 'type',
+                  'ratingNumber', 'workStart', 'workStop',
+                  'about', 'lowerPrice', 'higherPrice',
+                  'mediumRate', 'slug')
 
 
 class PlacePhotoGetSerializer(serializers.ModelSerializer):
@@ -239,5 +238,29 @@ class UpdateMediumRating(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.medium_rate = validated_data.get(
             'medium_rate', instance.medium_rate)
+        instance.save()
+        return instance
+
+
+class UpdateSlug(serializers.ModelSerializer):
+    class Meta:
+        model = Places
+        fields = ['slug']
+
+    def update(self, instance, validated_data):
+        instance.slug = validated_data.get(
+            'slug', instance.slug)
+        instance.save()
+        return instance
+
+
+class UpdateValidatedPlace(serializers.ModelSerializer):
+    class Meta:
+        model = Places
+        fields = ['is_place_valid']
+
+    def update(self, instance, validated_data):
+        instance.is_place_valid = validated_data.get(
+            'is_place_valid', instance.is_place_valid)
         instance.save()
         return instance

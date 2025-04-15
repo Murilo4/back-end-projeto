@@ -31,7 +31,6 @@ def create_comment(request, placeId):
     try:
         place_id = placeId
         comment = request.data.get('comment', None)
-        print(comment)
         if not user_id or not place_id:
             return JsonResponse({'success': False,
                                 'message':
@@ -61,7 +60,6 @@ def create_comment(request, placeId):
                                         "Erro ao salvar comentario"},
                                         status=status.HTTP_400_BAD_REQUEST)
                 serializer.save()
-                print("criou o comentario na tabela de userplace")
                 comments_number = PlacesComments.objects.filter(
                     place_comment=place_id).count()
                 update_place = UpdatePlacesUsers(

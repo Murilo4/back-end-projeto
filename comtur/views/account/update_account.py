@@ -28,8 +28,6 @@ def random_number():
 
 @csrf_exempt
 @api_view(['PUT'])
-# @throttle_classes([MinuteRateThrottleAnon,
-#                    HourlyRateThrottle, DailyRateThrottle])
 def update_user(request):
     if request.method != 'PUT':
         return JsonResponse({'success': False,

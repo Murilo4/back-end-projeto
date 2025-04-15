@@ -24,6 +24,7 @@ from .views.place.delete_place import delete_place
 from .views.place.get_place_cat_and_comments import get_place_lists
 from .views.place.get_place import get_place
 from .views.place.update_place import update_place
+from .views.place.get_all_places import get_places
 from .views.place.get_place_address import get_place_address
 from .views.place.update_address_local import update_address_local
 from .views.user_place.add_comment import create_comment
@@ -44,9 +45,11 @@ from .views.place.get_place_base import get_place_base
 from .views.search_new_places.search import search_suggestions
 from .views.account.account_type import get_user_type
 from .views.doub.create_doub import create_doub
+from .views.place.validated_place import validate_place
 from .views.doub.delete_doub import delete_doub
 from .views.doub.get_doubs import get_doub
 from .views.doub.update_doub import update_doub
+from .views.plans.get_plan_place_number import get_plan_user
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -87,11 +90,11 @@ urlpatterns = [
          delete_address, name="delete_address"),
     path("create-address-place/",
          create_address_place, name="create_address_place"),
-    path("get-place-base/<int:place_id>/",
+    path("get-place-base/<str:slug>/",
          get_place_base, name="get_place_base"),
-    path("get-place-lists/<int:place_id>/",
+    path("get-place-lists/<str:slug>/",
          get_place_lists, name="get_place_lists"),
-    path("get-place-address/<int:place_id>/",
+    path("get-place-address/<str:slug>/",
          get_place_address, name="get_place_address"),
     # Password Reset
     path('request-reset/',
@@ -105,36 +108,38 @@ urlpatterns = [
     # Place
     path('create-place/',
          create_place, name="create_place"),
-    path('get-place/<int:place_id>/',
+    path('get-place/<str:slug>/',
          get_place, name="get_place"),
     path("get-all-address/",
          get_all_address, name="get_all_address"),
-    path('update-place/<int:placeId>/',
+    path('update-place/<str:slug>/',
          update_place, name="update_place"),
     path('get-user-places/',
          get_place_user, name="get_place_user"),
     path('delete-place/<int:placeId>/',
          delete_place, name="delete_place"),
-    path('update-address-local/<int:placeId>/',
+    path('update-address-local/<str:slug>/',
          update_address_local, name="update_address_local"),
+    path("get-all-places/<int:page_number>/",
+         get_places, name="get_all_places"),
     # user place
-    path('send-comment/<int:placeId>/',
+    path('send-comment/<str:slug>/',
          create_comment, name='create_comment'),
-    path('update-comment/',
+    path('update-comment/<str:slug>/',
          update_comment, name='update_comment'),
-    path('delete-comment/',
+    path('delete-comment/<str:slug>/',
          delete_comment, name='delete_comment'),
     path('create-rating/',
          create_rating, name='create_rating'),
-    path('get-rating/<int:placeId>/',
+    path('get-rating/<str:slug>/',
          get_rating, name='get_rating'),
     path('delete-rating/',
          delete_rating, name='delete_rating'),
-    path('set-favorite/<int:placeId>/',
+    path('set-favorite/<str:slug>/',
          set_favorite, name='set_favorite'),
     path("create-rating/",
          create_rating, name="create_rating"),
-    path("get-favorite/<int:placeId>/",
+    path("get-favorite/<str:slug>/",
          get_favorite, name="get_favorite"),
 
     # path('send-sms/', send_sms_msg, name='send_sms_msg'),
@@ -157,4 +162,8 @@ urlpatterns = [
          update_doub, name="update_doub"),
     path("delete-doub/<int:doubId>/",
          delete_doub, name="delete_doub"),
+    path("user-plan/",
+         get_plan_user, name="get_plan_place_number"),
+    path("validate-place/<str:slug>/",
+         validate_place, name="validate_place"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

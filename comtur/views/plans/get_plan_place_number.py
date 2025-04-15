@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view
 from ...models import Subscription, Plans, PlansConfig, NormalUser
 from django.http import JsonResponse
-import jwt
 from rest_framework import status
+import jwt
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['GET'])
-def get_all_plans(request):
+def get_plan_user(request):
     if request.method != 'GET':
         return JsonResponse({'success': False,
                             'message': 'Invalid request method'},
@@ -32,34 +32,17 @@ def get_all_plans(request):
                              "message": "Token expirado."},
                             status=status.HTTP_401_UNAUTHORIZED)
     try:
-        subscription = Subscription.objects.get(user=user_id)
+        subscription = Subscription.objects.get(user=user.id)
 
-        plan = Plans.objects.get(id=subscription.plan.id)
+        plan = Plans.objects.get(subscription=subscription.id)
+        plan_config = PlansConfig.objects.get(plan=plan.id)
+        plan_data = {
+            'placesAllowed': plan_config.places_allowed,
+        }
 
-        planName = plan.id
-        if user.cpf:
-            all_plans = Plans.objects.filter(
-                belonging_system='contur_User')
-        elif user.cnpj:
-            all_plans = Plans.objects.filter(
-                belonging_system='contur_Enterprise')
-        new_plans = []
-        for new_plan in all_plans:
-            plan_config = PlansConfig.objects.get(plan=new_plan.id)
-            plans = {
-                'id': new_plan.id,
-                'description': new_plan.description,
-                'price': new_plan.price,
-                'planName': new_plan.plan_name,
-                'numberImages': plan_config.number_images,
-                'imageOnQuestions': plan_config.image_on_questions,
-                'placesAllowed': plan_config.places_allowed,
-            }
-            new_plans.append(plans)
         return JsonResponse({'success': True,
                             'message': 'Dados retornados',
-                             'activePlan': planName,
-                             'availablePlans': new_plans},
+                             'plan': plan_data},
                             status=status.HTTP_200_OK)
 
     except (Subscription.DoesNotExist, Plans.DoesNotExist):

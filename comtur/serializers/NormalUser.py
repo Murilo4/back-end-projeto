@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import NormalUser, lastPasswords
+from ..models import NormalUser, lastPasswords, Subscription
 
 
 class CreateNormalUser(serializers.ModelSerializer):
@@ -88,3 +88,15 @@ class UpdatePhotoUser(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class CreateUserPlan(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['plan', 'user',
+                  'user_type', 'subscription_data']
+
+    def create(self, validated_data):
+        userplan = Subscription(**validated_data)
+        userplan.save()
+        return userplan

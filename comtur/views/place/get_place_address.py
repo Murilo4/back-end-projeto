@@ -7,13 +7,13 @@ from ...models import addressStreet, Street, City, HouseNumber
 
 
 @api_view(['GET'])
-def get_place_address(request, place_id):
+def get_place_address(request, slug):
     if request.method != 'GET':
         return JsonResponse({'error': 'Invalid request method'},
                             status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        place = Places.objects.get(id=place_id)
+        place = Places.objects.get(slug=slug)
 
         city = PlacesCity.objects.get(id=place.city.id)
         state = PlacesStates.objects.get(id=city.placeState.id)
@@ -23,7 +23,7 @@ def get_place_address(request, place_id):
                             status=status.HTTP_404_NOT_FOUND)
 
     try:
-        address = Address.objects.get(place=place_id)
+        address = Address.objects.get(place=place.id)
     except Address.DoesNotExist:
         return JsonResponse({'success': False,
                              'message': 'Endereço não encontrado.'},

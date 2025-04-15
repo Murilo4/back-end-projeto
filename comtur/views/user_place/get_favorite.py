@@ -11,7 +11,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['POST'])
-def get_favorite(request, placeId):
+def get_favorite(request, slug):
     if request.method != 'POST':
         return JsonResponse({'success': False,
                              'message': 'metodo invalido'},
@@ -33,19 +33,18 @@ def get_favorite(request, placeId):
             "message": "Token JWT inválido ou expirado."
         }, status=status.HTTP_401_UNAUTHORIZED)
     try:
-        place_id = placeId
-        if not user_id or not place_id:
+        if not user_id:
             return JsonResponse({'success': False,
                                  'message':
                                 'Campos obrigatórios não preenchidos'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         exist_user_place = UserPlaces.objects.filter(user_place=user_id,
-                                                     place_id=place_id
+                                                     place_id__slug=slug
                                                      ).exists()
         if exist_user_place:
             userplace = UserPlaces.objects.get(user_place=user_id,
-                                               place_id=place_id)
+                                               place_id__slug=slug)
             if userplace.favorite is True:
                 return JsonResponse({"success": True,
                                      "message": "É favorito",

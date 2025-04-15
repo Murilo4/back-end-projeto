@@ -1,9 +1,9 @@
 from rest_framework.decorators import api_view  # , throttle_classes
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import Names, NormalUser
+from ...models import Names, NormalUser, Plans
 from ...serializers.Names import CreateNames, CreateUserName
-from ...serializers.NormalUser import CreateNormalUser
+from ...serializers.NormalUser import CreateNormalUser, CreateUserPlan
 import re
 from django.db import transaction
 from datetime import datetime, timedelta, timezone
@@ -207,7 +207,23 @@ def create_user(request):
                                             "message":
                                              "Erro ao criar nome do usuario"},
                                             status=status.HTTP_400_BAD_REQUEST)
-
+                plan_get = Plans.objects.get(plan_name="Gratuito empresa",
+                                             belonging_system="contur")
+                user_plan = {
+                    'user_id': user_id,
+                    'user_type': 'Contur Enterprise',
+                    'plan': plan_get.id,
+                    'subscription_data': datetime.now(),
+                    'images_allowed': 3,
+                    'videos_allowed': 0
+                }
+                serializer_user_plan = CreateUserPlan(data=user_plan)
+                if not serializer_user_plan.is_valid():
+                    return JsonResponse({"success": False,
+                                         "message":
+                                        "Erro ao criar plano do usuario"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                serializer_user_plan.save()
                 token = generate_jwt(get_user.email)
                 return JsonResponse({"success": True,
                                      "message": "Usuario criado com sucesso",

@@ -2,11 +2,13 @@ from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import NormalUser, Subscription, Names, PlacesCity
-from ...models import PlacesStates, Places, Category
+from ...models import PlacesStates, Places, Category, Plans, PlansConfig
 from ...serializers.place import CreatePlace, CreatePlaceCat, CreateCategory
 from ...serializers.place import CreatePhotos, CreateCity, CreateState
 from ...serializers.Names import CreateNames, CreateUserNamePlace
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.utils.text import slugify
+import time
 from django.db import transaction
 import os
 import jwt
@@ -91,6 +93,10 @@ def create_place(request):
                 "success": False,
                 "message": "Erro ao criar cidade",
             }, status=status.HTTP_400_BAD_REQUEST)
+        timestamp = str(int(time.time()))
+        hash_string = f"{placeName}-{timestamp}"
+        slug = slugify(hash_string, allow_unicode=True)
+
         new_place = {
             "description": description,
             "type": type[0],
@@ -102,7 +108,8 @@ def create_place(request):
             "city": city_reference[0],
             "about": request.data.get("about", ''),
             "lower_price": lower_price,
-            "higher_price": higher_price
+            "higher_price": higher_price,
+            "slug": slug,
         }
         place_create = CreatePlace(data=new_place)
         if not place_create.is_valid(raise_exception=True):
@@ -125,7 +132,9 @@ def create_place(request):
         number_images = 3
         try:
             user_sub = Subscription.objects.get(user=user)
-            number_images = user_sub.number_images
+            plan = Plans.objects.get(id=user_sub.plan.id)
+            plan_config = PlansConfig.objects.get(plan=plan.id)
+            number_images = plan_config.number_images
         except Subscription.DoesNotExist:
             pass
         photos = request.FILES.getlist('photos')
@@ -188,7 +197,7 @@ def get_or_create_category(place_create, categories):
         except Category.DoesNotExist:
             # Criar nova categoria se não existir
             create_category = CreateCategory(data={'category': category})
-            if create_category.is_valid():
+            if create_category.is_valid(raise_exception=True):
                 create_category.save()
                 categories_ids.append(create_category.instance.id)
             else:
@@ -199,7 +208,7 @@ def get_or_create_category(place_create, categories):
             'category': category_id,
             'place': place_create
         })
-        if create_placeCat.is_valid():
+        if create_placeCat.is_valid(raise_exception=True):
             create_placeCat.save()
         else:
             category_valid = False
@@ -219,7 +228,7 @@ def get_or_create_photos(place_create, photos):
                     'description': "Foto do local"
                 }
             )
-            if not create_photo.is_valid():
+            if not create_photo.is_valid(raise_exception=True):
                 print(create_photo.errors)
                 photos_valid = False
             else:
@@ -241,7 +250,7 @@ def create_names(name):
         except Names.DoesNotExist:
             test_data = {"name": nome_lower}
             serializer = CreateNames(data=test_data)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 obj = serializer.save()
                 new_name = Names.objects.get(name=obj.name)
                 referencias.append(new_name.id)
@@ -262,7 +271,7 @@ def create_city(city, state_reference):
         test_data = {"city": city_lower,
                      "placeState": state_reference}
         serializer = CreateCity(data=test_data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             obj = serializer.save()
             new_city = PlacesCity.objects.get(city=obj.city)
             referencias.append(new_city.id)
@@ -281,7 +290,7 @@ def create_state(state):
     except PlacesStates.DoesNotExist:
         test_data = {"state": state_lower}
         serializer = CreateState(data=test_data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             obj = serializer.save()
             new_state = PlacesStates.objects.get(state=obj.state)
             referencias.append(new_state.id)

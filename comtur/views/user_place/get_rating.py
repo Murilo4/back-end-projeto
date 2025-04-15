@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['GET'])
-def get_rating(request, placeId):
+def get_rating(request, slug):
     if request.method != 'GET':
         return JsonResponse({'success': False,
                              'message': 'metodo invalido'},
@@ -31,19 +31,17 @@ def get_rating(request, placeId):
             "success": False,
             "message": "Token JWT inválido ou expirado."
         }, status=status.HTTP_401_UNAUTHORIZED)
-    place_id = placeId
 
-    if not user_id or not place_id:
+    if not user_id:
         return JsonResponse({'success': False,
                              'message': 'Campos obrigatórios não preenchidos'},
                             status=status.HTTP_400_BAD_REQUEST)
     try:
+        place = Places.objects.get(slug=slug)
         user_place = UserPlaces.objects.get(user_place=user_id,
-                                            place_id=place_id)
-        Places.objects.get(id=place_id)
-
+                                            place_id=place.id)
         UserPlaces.objects.get(user_place=user_id,
-                               place_id=place_id)
+                               place_id=place.id)
     except (UserPlaces.DoesNotExist, Places.DoesNotExist):
         return JsonResponse({"sucess": False,
                              "message": "Local não existe"},

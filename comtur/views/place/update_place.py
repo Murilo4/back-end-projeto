@@ -1,9 +1,14 @@
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
-from ...models import Places, PlacesPhotos, Category, PlaceCategories
+from ...models import Places, PlacesPhotos, Category, PlaceCategories, Names
+from ...models import UserName
 from ...serializers.place import UpdatePlaces, CreateCategory, CreatePlaceCat
+from ...serializers.place import UpdateSlug
+from ...serializers.Names import CreateNames, CreateUserNamePlace
 import os
+import time
+from django.utils.text import slugify
 from django.db import transaction
 import json
 from dotenv import load_dotenv
@@ -12,7 +17,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['PUT'])
-def update_place(request, placeId):
+def update_place(request, slug):
     if request.method != 'PUT':
         return JsonResponse({'success': False,
                              'message': 'Invalid request method'},
@@ -25,9 +30,7 @@ def update_place(request, placeId):
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        place_id = placeId
-
-        place = Places.objects.get(id=place_id)
+        place = Places.objects.get(slug=slug)
 
         with transaction.atomic():
             update_place = UpdatePlaces(place,
@@ -39,19 +42,85 @@ def update_place(request, placeId):
                                      'message': 'Invalid data'},
                                     status=status.HTTP_400_BAD_REQUEST)
 
-            photo = request.data.get('photos', [])
-            print(photo)
-            if photo:
-                img_ids_to_keep, img_ids_to_add = process_img(
-                    photo, place)
-                remove_old_img(place, img_ids_to_keep)
+            username_list = UserName.objects.filter(
+                places=place.id).order_by('create_order')
 
-            category = request.data.getlist('categories', [])
-            if category:
-                category_to_keep, category_to_add = process_cat(
-                    category, place)
+            names = []
+            for username in username_list:
+                print(username)
+                try:
+                    name_obj = Names.objects.get(id=username.name_id)
+                    names.append(name_obj.name)
+                except Names.DoesNotExist:
+                    continue
 
-                remove_old_cat(place, category_to_keep)
+            full_name_from_db = " ".join(names).lower().strip()
+            update_name = request.data.get('placeName', '').lower().strip()
+
+            if update_name != full_name_from_db:
+                name_list = update_name.split()
+                new_names = [name for name in name_list]
+                timestamp = str(int(time.time()))
+                hash_string = f"{update_name}-{timestamp}"
+                slug = slugify(hash_string, allow_unicode=True)
+                slug = UpdateSlug(place, data={'slug': slug})
+                if slug.is_valid():
+                    slug.save()
+                else:
+                    pass
+                referencias = []
+                for new_name in new_names:
+                    try:
+                        name_obj = Names.objects.get(name=new_name)
+                        referencias.append(name_obj.id)
+                    except Names.DoesNotExist:
+                        name_data = {"name": new_name}
+                        serializer = CreateNames(data=name_data)
+                        if serializer.is_valid():
+                            new_name_obj = serializer.save()
+                            referencias.append(new_name_obj.id)
+                        else:
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Erro ao criar novo nome',
+                                'error': serializer.errors
+                            }, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    UserName.objects.filter(places=place.id,
+                                            ).delete()
+                except UserName.DoesNotExist:
+                    pass
+
+                if referencias:
+                    order = 1
+                    for referencia in referencias:
+                        serializer_user = CreateUserNamePlace(
+                            data={'name_id': referencia,
+                                  'places': place.id,
+                                  'create_order': order})
+                        if serializer_user.is_valid(raise_exception=True):
+                            serializer_user.save()
+                            order += 1
+                        else:
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Erro ao criar nome do usuário',
+                                'error': serializer_user.errors
+                            }, status=status.HTTP_400_BAD_REQUEST)
+
+            # photo = request.data.get('photos', [])
+            # if photo:
+            #     img_ids_to_keep, img_ids_to_add = process_img(
+            #         photo, place)
+            #     remove_old_img(place, img_ids_to_keep)
+
+            # category = request.data.getlist('categories', [])
+            # if category:
+            #     category_to_keep, category_to_add = process_cat(
+            #         category, place)
+
+            #     remove_old_cat(place, category_to_keep)
 
         return JsonResponse({'success': True,
                             'message': 'Usuário atualizado com sucesso'},
@@ -77,7 +146,6 @@ def process_img(existing_images, place):
         place_photo=place).values_list('img_url', flat=True))
 
     for image_data in existing_images:
-        print(image_data)
         img_url = image_data.get('url')
         img_description = image_data.get('description', None)
 
@@ -131,7 +199,6 @@ def process_cat(existing_categories, place):
     for category_data in existing_categories:
         # Acesse o campo "category" corretamente
         category_name = category_data.get("category")
-        print(category_data)
 
         try:
             # Tentando obter a categoria diretamente com get()

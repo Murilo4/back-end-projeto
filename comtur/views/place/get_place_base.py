@@ -6,13 +6,13 @@ from ...models import Category, UserName, Names
 
 
 @api_view(['GET'])
-def get_place_base(request, place_id):
+def get_place_base(request, slug):
     if request.method != 'GET':
         return JsonResponse({'error': 'Invalid request method'},
                             status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        place = Places.objects.get(id=place_id)
+        place = Places.objects.get(slug=slug)
 
         username_list = UserName.objects.filter(
             places=place.id).order_by('create_order')
@@ -32,7 +32,7 @@ def get_place_base(request, place_id):
                              "message": "Local não encontrado"},
                             status=status.HTTP_404_NOT_FOUND)
     try:
-        photos = PlacesPhotos.objects.filter(place_photo=place_id)
+        photos = PlacesPhotos.objects.filter(place_photo=place.id)
         photos = PlacesPhotos.objects.filter(
             place_photo=place.id)
         photos_url = []
