@@ -49,6 +49,10 @@ from .views.place.validated_place import validate_place
 from .views.doub.delete_doub import delete_doub
 from .views.doub.get_doubs import get_doub
 from .views.doub.update_doub import update_doub
+from .views.city.city_history import create_history
+from .views.city.city_history import get_history
+from .views.city.city_history import update_history
+from .views.city.city_history import delete_history
 from .views.plans.get_plan_place_number import get_plan_user
 from django.conf.urls.static import static
 from django.conf import settings
@@ -166,4 +170,12 @@ urlpatterns = [
          get_plan_user, name="get_plan_place_number"),
     path("validate-place/<str:slug>/",
          validate_place, name="validate_place"),
+    path("create-history/<str:city>/",
+         create_history, name="create_history"),
+    path("get-history/<str:city>/",
+         get_history, name="get_history"),
+    path("update-history/<str:city>/",
+         update_history, name="update_history"),
+    path("delete-history/<str:city>/",
+         delete_history, name="delete_history"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

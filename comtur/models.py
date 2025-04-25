@@ -12,6 +12,15 @@ class Names(models.Model):
         db_table = 'Names'
 
 
+class City(models.Model):
+    id = models.IntegerField(primary_key=True)
+    city = models.CharField(max_length=100)
+
+    class Meta:
+        managed = False
+        db_table = 'City'
+
+
 class NormalUser(models.Model):
     id = models.IntegerField(primary_key=True)
     email = models.EmailField(unique=True)
@@ -26,6 +35,7 @@ class NormalUser(models.Model):
     last_pass_change = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
+    staff_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
     class Meta:
         managed = False
@@ -113,15 +123,6 @@ class HouseNumber(models.Model):
     class Meta:
         managed = False
         db_table = 'HouseNumber'
-
-
-class City(models.Model):
-    id = models.IntegerField(primary_key=True)
-    city = models.CharField(max_length=100)
-
-    class Meta:
-        managed = False
-        db_table = 'City'
 
 
 class Address(models.Model):
@@ -357,3 +358,13 @@ class ComumDoubs(models.Model):
     class Meta:
         managed = False
         db_table = "ComumDoubs"
+
+
+class CityHistory(models.Model):
+    id = models.IntegerField(primary_key=True)
+    city = models.CharField(max_length=255)
+    history = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "CityHistory"

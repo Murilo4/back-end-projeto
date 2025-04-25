@@ -176,10 +176,10 @@ def get_places(request, page_number):
                 Category.DoesNotExist,
                 PlacesComments.DoesNotExist):
             pass
-
+    print(places_data)
     return JsonResponse({"success": True,
                          "message": "Locais retornados",
-                         "places": places_data,
+                         "places": places_data if places_data else [],
                          "count": page_obj.paginator.count,
                          "hasNext": page_obj.has_next(),
                          "hasPrevious": page_obj.has_previous(),

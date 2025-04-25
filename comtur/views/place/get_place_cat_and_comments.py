@@ -37,11 +37,10 @@ def get_place_lists(request, slug):
             user_place = UserPlaces.objects.get(id=comment.user_comment.id)
             user_rating = PlacesRating.objects.get(
                 user_place=user_place.id)
+            user_has_comment = False
             if user_id:
                 if (user_id == user_place.user_place.id):
                     user_has_comment = True
-                else:
-                    user_has_comment = False
             # Obter o nome do usuário
             user_name_record = UserName.objects.filter(
                 user_id=user_place.user_place.id)  # Acesso ao ID do usuário

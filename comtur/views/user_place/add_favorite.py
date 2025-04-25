@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from django.db import transaction
-from ...models import UserPlaces
+from ...models import UserPlaces, Places
 from ...serializers.place import UpdateUserPlace, CreateUserPlaceFavorite
 from rest_framework import exceptions
 import os
@@ -13,7 +13,7 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 @api_view(['POST'])
-def set_favorite(request, placeId):
+def set_favorite(request, slug):
     if request.method != 'POST':
         return JsonResponse({'success': False,
                              'message': 'metodo invalido'},
@@ -35,20 +35,20 @@ def set_favorite(request, placeId):
             "message": "Token JWT inválido ou expirado."
         }, status=status.HTTP_401_UNAUTHORIZED)
     try:
-        place_id = placeId
-        if not user_id or not place_id:
+        place = Places.objects.get(slug=slug)
+        if not user_id:
             return JsonResponse({'success': False,
                                  'message':
                                 'Campos obrigatórios não preenchidos'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         exist_user_place = UserPlaces.objects.filter(user_place=user_id,
-                                                     place_id=place_id
+                                                     place_id=place.id
                                                      ).exists()
         with transaction.atomic():
             if exist_user_place:
                 user_place = UserPlaces.objects.get(user_place=user_id,
-                                                    place_id=place_id)
+                                                    place_id=place.id)
                 favorite = True
                 if user_place.favorite is True:
                     favorite = False
@@ -67,7 +67,7 @@ def set_favorite(request, placeId):
                 favorite = True
                 new_user_place = CreateUserPlaceFavorite(
                     data={'user_place': user_id,
-                          'place': place_id,
+                          'place': place.id,
                           'favorite': favorite})
                 if new_user_place.is_valid(raise_exception=True):
                     new_user_place.save()

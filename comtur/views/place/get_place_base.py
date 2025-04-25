@@ -47,6 +47,7 @@ def get_place_base(request, slug):
                 "about": place.about,
                 "rating": place.rating_number if place.rating_number else 0,
                 "placeName": full_name,
+                "mediumRate": place.medium_rate,
                 "photos": photos_url,
                 "lowerPrice": place.lower_price,
                 "higherPrice": place.higher_price,
