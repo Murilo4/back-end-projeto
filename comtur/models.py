@@ -368,3 +368,13 @@ class CityHistory(models.Model):
     class Meta:
         managed = False
         db_table = "CityHistory"
+
+
+class SlidesPhotos(models.Model):
+    id = models.IntegerField(primary_key=True)
+    photo = models.ImageField(upload_to='slides_photos/',
+                                        blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = "slidesPhotos"

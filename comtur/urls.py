@@ -54,6 +54,7 @@ from .views.city.city_history import get_history
 from .views.city.city_history import update_history
 from .views.city.city_history import delete_history
 from .views.plans.get_plan_place_number import get_plan_user
+from .views.photos.get_slides_main_page import get_slides
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -61,6 +62,8 @@ urlpatterns = [
     # User
     path('create/',
          create_user, name="create_user"),
+    path('slides/',
+         get_slides, name="get_slides"),
     path('login/',
          login_user_with_cpf, name="login_cpf"),
     path('login-email/',
