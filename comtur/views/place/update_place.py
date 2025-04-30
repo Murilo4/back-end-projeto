@@ -2,13 +2,14 @@ from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework import status
 from ...models import Places, PlacesPhotos, Category, PlaceCategories, Names
-from ...models import UserName
+from ...models import UserName, Subscription, Plans, PlansConfig, NormalUser
 from ...serializers.place import UpdatePlaces, CreateCategory, CreatePlaceCat
 from ...serializers.place import UpdateSlug
 from ...serializers.Names import CreateNames, CreateUserNamePlace
 import os
 import time
 import json
+import jwt
 from django.utils.text import slugify
 from django.db import transaction
 from dotenv import load_dotenv
@@ -32,29 +33,38 @@ def update_place(request, slug):
                 "success": False,
                 "message": "Token de acesso não fornecido ou formato inválido."
             }, status=status.HTTP_401_UNAUTHORIZED)
-
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            cnpj = payload.get('id')
+        except Exception:
+            return JsonResponse({
+                "success": False,
+                "message": "Token JWT inválido ou expirado."
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        enterprise = cnpj
+        if not enterprise:
+            return JsonResponse({"success": False,
+                                "message": "Empresa não encontrada"},
+                                status=status.HTTP_400_BAD_REQUEST)
+        user = NormalUser.objects.get(id=enterprise)
         # Validate and process the 'type' field
         place_type = request.data.get("type")
         if not place_type or not isinstance(place_type, str):
             return JsonResponse({'success': False,
-                                 'message': 'Invalid type field. It must be a non-empty string.'},
+                                 'message':
+                                 'Invalid type field.'},
                                 status=status.HTTP_400_BAD_REQUEST)
-        print(f"Validated type field: {place_type}")
 
         place = Places.objects.get(slug=slug)
         with transaction.atomic():
-            print(f"Starting update for place ID: {place.id}")
             # Ensure 'type' is included in the data to be updated
             update_data = request.data.copy()
             update_data["type"] = place_type.strip()  # Clean up the type field
-
             update_place = UpdatePlaces(place, data=update_data, partial=True)
             if update_place.is_valid():
-                print("Serializer data is valid. Saving updated place...")
                 update_place.save()
-                print(f"Place updated successfully: {place}")
             else:
-                print(f"Serializer validation failed: {update_place.errors}")
                 return JsonResponse({'success': False,
                                      'message': 'Invalid data',
                                      'errors': update_place.errors},
@@ -62,7 +72,6 @@ def update_place(request, slug):
 
             username_list = UserName.objects.filter(
                 places=place.id).order_by('create_order')
-            print("chegou até a captura do nome")
             names = []
             for username in username_list:
                 try:
@@ -127,14 +136,29 @@ def update_place(request, slug):
                             }, status=status.HTTP_400_BAD_REQUEST)
 
             photo = request.data.getlist('photos', [])
-
+            number_images = 3
+            try:
+                user_sub = Subscription.objects.get(user=user)
+                plan = Plans.objects.get(id=user_sub.plan.id)
+                plan_config = PlansConfig.objects.get(plan=plan.id)
+                number_images = plan_config.number_images
+            except Subscription.DoesNotExist:
+                pass
+            try:
+                qtt_photos = len(photo)
+            except Exception:
+                qtt_photos = 2
+            if qtt_photos > number_images:
+                return JsonResponse({'success': False,
+                                    'message':
+                                     'Você excedeu o número de imagens'},
+                                    status=status.HTTP_402_PAYMENT_REQUIRED)
             if photo:
                 img_ids_to_keep = process_img(
                     photo, place.id)
                 remove_old_img(place.id, img_ids_to_keep)
 
             category = request.data.getlist('categories', [])
-            print(category)
             if category:
                 category_to_keep, category_to_add = process_cat(
                     category, place.id)
@@ -187,8 +211,8 @@ def process_img(existing_images, place):
                 get_img = PlacesPhotos.objects.filter(
                     img_url=relative_path).first()
                 img_ids_to_keep.add(get_img.id)
-            except Exception as e:
-                print(f"Error saving new image: {e}")
+            except Exception:
+                continue
     return img_ids_to_keep
 
 
@@ -197,7 +221,6 @@ def remove_old_img(place, img_ids_to_keep):
         PlacesPhotos.objects.filter(
             place_photo=place).values_list('id', flat=True)
     )
-    # Delete images not in img_ids_to_keep
     img_to_remove = current_img_ids - img_ids_to_keep
     if img_to_remove:
         PlacesPhotos.objects.filter(id__in=img_to_remove).delete()
@@ -207,31 +230,24 @@ def process_cat(existing_categories, place):
     category_ids_to_keep = set()
     category_ids_to_add = []
 
-    print(f"Processing categories for place ID: {place}")
-    for category_list in existing_categories:  # Iterate over the list of category dictionaries
+    for category_list in existing_categories:
         try:
             # Parse the category list (if it's a JSON string)
             categories = json.loads(category_list) if isinstance(
                 category_list, str) else category_list
-            for category_data in categories:  # Iterate over individual category dictionaries
-                print(f"Category data: {category_data}")
+            for category_data in categories:
                 category_name = category_data.get(
                     "category")  # Access the "category" field
-                print(f"Processing category: {category_name}")
                 if not category_name:
-                    print("Invalid category data, skipping...")
                     continue
 
                 try:
                     # Try to get the existing category
                     existing_category = Category.objects.get(
                         category=category_name)
-                    print(f"Found existing category: {existing_category}")
                     category_ids_to_keep.add(existing_category.id)
                 except Category.DoesNotExist:
                     # Create a new category if it doesn't exist
-                    print(
-                        f"Category not found, creating new category: {category_name}")
                     new_category = CreateCategory(
                         data={"category": category_name})
                     if new_category.is_valid(raise_exception=True):
@@ -239,20 +255,16 @@ def process_cat(existing_categories, place):
                         get_category = Category.objects.filter(
                             category=category_name).first()
                         if get_category:
-                            print(f"New category created: {get_category}")
                             category_ids_to_add.append(get_category.id)
                             category_ids_to_keep.add(get_category.id)
 
-        except Exception as e:
-            print(f"Error processing category list: {e}")
+        except Exception:
             continue
 
     for cat in category_ids_to_keep:
         try:
             PlaceCategories.objects.get(category=cat, place=place)
-            print(f"Category already linked to place: {cat}")
         except PlaceCategories.DoesNotExist:
-            print(f"Linking category to place: {cat}")
             category_ids_to_add.append(cat)
 
     for ids in category_ids_to_add:
@@ -260,29 +272,18 @@ def process_cat(existing_categories, place):
             'place': place, 'category': ids})
         if New_placeCategory.is_valid(raise_exception=True):
             New_placeCategory.save()
-            print(f"Category linked to place successfully: {ids}")
 
-    print(f"Categories to keep: {category_ids_to_keep}")
-    print(f"Categories added: {category_ids_to_add}")
     return category_ids_to_keep, category_ids_to_add
 
 
 def remove_old_cat(place, existing_category_ids):
-    print(f"Removing old categories for place ID: {place}")
     current_category_ids = set(
         PlaceCategories.objects.filter(place=place).values_list(
             'category', flat=True)
     )
-    print(f"Current categories in database: {current_category_ids}")
-    print(f"Categories to keep: {existing_category_ids}")
     categories_to_remove = current_category_ids - set(existing_category_ids)
-    print(f"Categories to remove: {categories_to_remove}")
 
     if categories_to_remove:
         for category_id in categories_to_remove:
-            print(f"Attempting to remove category ID: {category_id}")
             PlaceCategories.objects.filter(
                 category=category_id, place=place).delete()
-            print(f"Successfully removed category ID: {category_id}")
-    else:
-        print("No categories to remove.")

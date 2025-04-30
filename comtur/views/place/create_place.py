@@ -138,12 +138,15 @@ def create_place(request):
         except Subscription.DoesNotExist:
             pass
         photos = request.FILES.getlist('photos')
-        qtt_photos = 2
+        try:
+            qtt_photos = len(photos)
+        except Exception:
+            qtt_photos = 2
         if qtt_photos > number_images:
             return JsonResponse({'success': False,
                                 'message':
                                  'Você excedeu o número de imagens'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_402_PAYMENT_REQUIRED)
         is_photos_valid = get_or_create_photos(
             get_place.id, photos)
 

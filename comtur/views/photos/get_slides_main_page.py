@@ -13,25 +13,29 @@ def get_slides(request):
                             status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        # Obtém todas as fotos
         photos = SlidesPhotos.objects.all()
 
-    except SlidesPhotos.DoesNotExist:
-        return JsonResponse({"success": False,
-                             "message": "Local não encontrado"},
-                            status=status.HTTP_404_NOT_FOUND)
-    try:
+        # Processa as URLs das fotos
         photos_url = []
         for photo in photos:
             photo_url = photo.img_url.url if photo.img_url else None
             photos_url.append(photo_url)
-        slides_json = {
-            "photos": photos_url,
-        }
-    except (SlidesPhotos.DoesNotExist):
+
+        # Cria o JSON de resposta
+        slides_json = {"photos": photos_url}
+
+        return JsonResponse({"success": True,
+                             "message": "Fotos retornadas com sucesso",
+                             "data": slides_json},
+                            status=status.HTTP_200_OK)
+
+    except SlidesPhotos.DoesNotExist:
         return JsonResponse({"success": False,
-                             "message": "Fotos não encontrados"},
-                            status=status.HTTP_400_BAD_REQUEST)
-    return JsonResponse({"success": True,
-                        "message": "fotos retornados",
-                         "photos": slides_json},
-                        status=status.HTTP_200_OK)
+                             "message": "Fotos não encontradas"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return JsonResponse({"success": False,
+                             "message": f"Erro interno: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

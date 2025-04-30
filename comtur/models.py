@@ -34,12 +34,28 @@ class NormalUser(models.Model):
     is_validated = models.BooleanField(default=0)
     last_pass_change = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now=True)
+    staff_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     staff_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
     class Meta:
         managed = False
         db_table = 'NormalUser'
+
+
+class Partness(models.Model):
+    id = models.IntegerField(primary_key=True)
+    photo = models.ImageField(upload_to='partness/',
+                              blank=True, null=True)
+    facebook = models.TextField()
+    x = models.TextField()
+    instagram = models.TextField()
+    linkedin = models.TextField()
+    name = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "partness"
 
 
 class lastPasswords(models.Model):

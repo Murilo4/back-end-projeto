@@ -55,6 +55,9 @@ from .views.city.city_history import update_history
 from .views.city.city_history import delete_history
 from .views.plans.get_plan_place_number import get_plan_user
 from .views.photos.get_slides_main_page import get_slides
+from .views.place.get_place_base import get_place_base_slides
+from .views.place.get_place_base import get_place_base_reviews
+from .views.place.get_place_base import get_partness
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -99,6 +102,12 @@ urlpatterns = [
          create_address_place, name="create_address_place"),
     path("get-place-base/<str:slug>/",
          get_place_base, name="get_place_base"),
+    path("get-place-base-slides/",
+         get_place_base_slides, name="get_place_base_slides"),
+    path("get-place-base-reviews/",
+         get_place_base_reviews, name="get_place_base_reviews"),
+    path("get-partness/",
+         get_partness, name="get_partness"),
     path("get-place-lists/<str:slug>/",
          get_place_lists, name="get_place_lists"),
     path("get-place-address/<str:slug>/",
